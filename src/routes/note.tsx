@@ -59,9 +59,9 @@ function NotePage() {
         <h1 className="hand text-4xl">
           Nice session{pending ? ` — ${fmtDuration(pending.elapsed)}` : ""}! ✏️
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Two quick lines for future-you. Takes under 30 seconds, promise.
-        </p>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Two quick notes for future-you.
+      </p>
 
         <label className="mt-6 block">
           <span className="hand text-2xl">What did you work on this session?</span>

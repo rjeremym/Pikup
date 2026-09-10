@@ -110,7 +110,7 @@ function Index() {
           <p className="hand mt-2 text-xl text-muted-foreground">
             {timer.running
               ? timer.paused
-                ? "paused — the kettle's on ☕"
+                ? "Paused"
                 : "deep work in progress…"
               : "ready when you are"}
           </p>
@@ -144,12 +144,14 @@ function Index() {
         </div>
       </div>
 
-      <Link
-        to="/summary"
-        className="hand mt-8 inline-flex items-center gap-2 text-xl text-muted-foreground underline decoration-dotted underline-offset-4 hover:text-foreground"
-      >
-        <CalendarDays className="h-4 w-4" /> Weekly summary
-      </Link>
+      {!timer.running && (
+        <Link
+          to="/summary"
+          className="hand mt-8 inline-flex items-center gap-2 text-xl text-muted-foreground underline decoration-dotted underline-offset-4 hover:text-foreground"
+        >
+          <CalendarDays className="h-4 w-4" /> Weekly summary
+        </Link>
+      )}
     </main>
   );
 }
