@@ -5,8 +5,8 @@ export interface Session {
   start: number;
   end: number;
   durationSec: number;
-  workedOn?: string;
-  nextThing?: string;
+  workedOn?: string | undefined;
+  nextThing?: string | undefined;
 }
 
 const SESSIONS_KEY = "devsketch.sessions";
