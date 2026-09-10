@@ -66,9 +66,6 @@ function SummaryPage() {
       <div className="paper-card relative w-full max-w-xl px-6 pt-12 pb-8 sm:px-10">
         <div className="washi absolute -top-3 right-10 h-7 w-24 rotate-3" />
         <h1 className="hand text-4xl">This week: {fmtHours(thisWeek)} of deep work</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Small sessions count. This is proof they happened.
-        </p>
 
         <div className="mt-8 space-y-3">
           {weeks.map((w, i) => (
