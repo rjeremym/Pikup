@@ -16,12 +16,12 @@ import { STICKER_IMAGES } from "./index";
 export const Route = createFileRoute("/summary")({
   head: () => ({
     meta: [
-      { title: "Weekly summary — DevSketch" },
+      { title: "Weekly summary — Pikup" },
       {
         name: "description",
         content: "Your deep-work hours by week — a light sketch of your progress, not a dashboard.",
       },
-      { property: "og:title", content: "Weekly summary — DevSketch" },
+      { property: "og:title", content: "Weekly summary — Pikup" },
       {
         property: "og:description",
         content: "Your deep-work hours by week — a light sketch of your progress, not a dashboard.",
@@ -63,6 +63,7 @@ function SummaryPage() {
 
   return (
     <main className="flex min-h-screen flex-col items-center px-4 py-10">
+      <p className="hand mb-6 text-3xl text-primary">Pikup</p>
       <div className="paper-card relative w-full max-w-xl px-6 pt-12 pb-8 sm:px-10">
         <div className="washi absolute -top-3 right-10 h-7 w-24 rotate-3" />
         <h1 className="hand text-4xl">This week: {fmtHours(thisWeek)} of deep work</h1>
@@ -86,7 +87,7 @@ function SummaryPage() {
 
         <h2 className="hand mt-10 text-3xl">Sticker shelf</h2>
         <p className="text-sm text-muted-foreground">
-          Hit a weekly milestone to unlock a sticker — tap one to pin it on your timer page.
+          Hit a weekly milestone to unlock a sticker — tap one to pin it on your home page.
         </p>
         <div className="mt-4 grid grid-cols-5 gap-3">
           {MILESTONES.map((m) => {
@@ -128,7 +129,7 @@ function SummaryPage() {
         to="/"
         className="hand mt-8 inline-flex items-center gap-2 text-xl text-muted-foreground underline decoration-dotted underline-offset-4 hover:text-foreground"
       >
-        <ArrowLeft className="h-4 w-4" /> back to the timer
+        <ArrowLeft className="h-4 w-4" /> back to Pikup
       </Link>
     </main>
   );
