@@ -9,9 +9,34 @@ export interface Session {
   nextThing?: string | undefined;
 }
 
-const SESSIONS_KEY = "devsketch.sessions";
-const STICKERS_KEY = "devsketch.stickers";
-const PLACED_KEY = "devsketch.placedSticker";
+const SESSIONS_KEY = "pikup.sessions";
+const STICKERS_KEY = "pikup.stickers";
+const PLACED_KEY = "pikup.placedSticker";
+const TIMER_KEY = "pikup.timer";
+const PENDING_KEY = "pikup.pendingSession";
+
+/** Migrate old DevSketch keys once so existing local data isn't lost. */
+function migrateKeys() {
+  if (typeof localStorage === "undefined") return;
+  const pairs: [string, string][] = [
+    ["devsketch.sessions", SESSIONS_KEY],
+    ["devsketch.stickers", STICKERS_KEY],
+    ["devsketch.placedSticker", PLACED_KEY],
+  ];
+  for (const [oldKey, newKey] of pairs) {
+    if (!localStorage.getItem(newKey) && localStorage.getItem(oldKey)) {
+      localStorage.setItem(newKey, localStorage.getItem(oldKey)!);
+    }
+  }
+  if (typeof sessionStorage !== "undefined") {
+    if (!sessionStorage.getItem(PENDING_KEY) && sessionStorage.getItem("devsketch.pendingSession")) {
+      sessionStorage.setItem(PENDING_KEY, sessionStorage.getItem("devsketch.pendingSession")!);
+      sessionStorage.removeItem("devsketch.pendingSession");
+    }
+  }
+}
+
+migrateKeys();
 
 function read<T>(key: string, fallback: T): T {
   try {
@@ -50,6 +75,24 @@ export function getPlacedSticker(): string | null {
 
 export function placeSticker(id: string | null) {
   localStorage.setItem(PLACED_KEY, JSON.stringify(id));
+}
+
+export function getPendingSession(): { start: number; elapsed: number } | null {
+  if (typeof sessionStorage === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(PENDING_KEY);
+    return raw ? (JSON.parse(raw) as { start: number; elapsed: number }) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setPendingSession(pending: { start: number; elapsed: number }) {
+  sessionStorage.setItem(PENDING_KEY, JSON.stringify(pending));
+}
+
+export function clearPendingSession() {
+  sessionStorage.removeItem(PENDING_KEY);
 }
 
 /** seconds accumulated in the week containing `ref` (default now) */
@@ -104,6 +147,45 @@ export function fmtHours(sec: number): string {
   return `${Math.round(h * 10) / 10}h`;
 }
 
+/** Wall-clock timer persistence — elapsed is derived from Date.now(), not ticks. */
+interface PersistedTimer {
+  running: boolean;
+  paused: boolean;
+  /** Wall-clock ms when the session started */
+  startTs: number;
+  /** Total ms spent paused before the current pause (if any) */
+  pausedAccumMs: number;
+  /** Wall-clock ms when the current pause began, or null if running */
+  pauseStartedAt: number | null;
+}
+
+function emptyTimer(): PersistedTimer {
+  return {
+    running: false,
+    paused: false,
+    startTs: 0,
+    pausedAccumMs: 0,
+    pauseStartedAt: null,
+  };
+}
+
+function loadTimer(): PersistedTimer {
+  return read<PersistedTimer>(TIMER_KEY, emptyTimer());
+}
+
+function saveTimer(t: PersistedTimer) {
+  if (typeof localStorage === "undefined") return;
+  localStorage.setItem(TIMER_KEY, JSON.stringify(t));
+}
+
+/** Elapsed seconds from wall clock, excluding paused time. */
+export function wallElapsedSec(t: PersistedTimer, now = Date.now()): number {
+  if (!t.running || !t.startTs) return 0;
+  const currentPause = t.pauseStartedAt != null ? now - t.pauseStartedAt : 0;
+  const ms = now - t.startTs - t.pausedAccumMs - currentPause;
+  return Math.max(0, Math.floor(ms / 1000));
+}
+
 export interface TimerState {
   running: boolean;
   paused: boolean;
@@ -116,39 +198,87 @@ export interface TimerState {
 }
 
 export function useTimer(): TimerState {
-  const [running, setRunning] = useState(false);
-  const [paused, setPaused] = useState(false);
+  const [timer, setTimer] = useState<PersistedTimer>(emptyTimer);
   const [elapsed, setElapsed] = useState(0);
-  const [startTs, setStartTs] = useState<number | null>(null);
 
+  // Hydrate from localStorage after mount (avoids SSR mismatch; restores mid-session)
   useEffect(() => {
-    if (!running || paused) return;
-    const iv = setInterval(() => setElapsed((e) => e + 1), 1000);
-    return () => clearInterval(iv);
-  }, [running, paused]);
+    const loaded = loadTimer();
+    setTimer(loaded);
+    setElapsed(wallElapsedSec(loaded));
+  }, []);
+
+  const commit = (next: PersistedTimer) => {
+    saveTimer(next);
+    setTimer(next);
+    setElapsed(wallElapsedSec(next));
+  };
+
+  // Recalculate from wall clock on an interval + when tab becomes visible again
+  useEffect(() => {
+    if (!timer.running || timer.paused) {
+      setElapsed(wallElapsedSec(timer));
+      return;
+    }
+
+    const tick = () => setElapsed(wallElapsedSec(timer));
+    tick();
+    const iv = setInterval(tick, 250);
+
+    const onVis = () => {
+      if (document.visibilityState === "visible") tick();
+    };
+    document.addEventListener("visibilitychange", onVis);
+
+    return () => {
+      clearInterval(iv);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, [timer]);
 
   return {
-    running,
-    paused,
+    running: timer.running,
+    paused: timer.paused,
     elapsed,
     start: () => {
-      setStartTs(Date.now());
-      setElapsed(0);
-      setPaused(false);
-      setRunning(true);
+      commit({
+        running: true,
+        paused: false,
+        startTs: Date.now(),
+        pausedAccumMs: 0,
+        pauseStartedAt: null,
+      });
     },
-    togglePause: () => setPaused((p) => !p),
+    togglePause: () => {
+      const cur = loadTimer();
+      if (!cur.running) return;
+      let next: PersistedTimer;
+      if (cur.paused && cur.pauseStartedAt != null) {
+        next = {
+          ...cur,
+          paused: false,
+          pausedAccumMs: cur.pausedAccumMs + (Date.now() - cur.pauseStartedAt),
+          pauseStartedAt: null,
+        };
+      } else {
+        next = {
+          ...cur,
+          paused: true,
+          pauseStartedAt: Date.now(),
+        };
+      }
+      commit(next);
+    },
     stop: () => {
-      if (startTs == null) return null;
-      setRunning(false);
-      setPaused(false);
-      return { start: startTs, elapsed };
+      const cur = loadTimer();
+      if (!cur.running || !cur.startTs) return null;
+      const secs = wallElapsedSec(cur);
+      const result = { start: cur.startTs, elapsed: secs };
+      commit(emptyTimer());
+      return result;
     },
     reset: () => {
-      setRunning(false);
-      setPaused(false);
-      setElapsed(0);
-      setStartTs(null);
+      commit(emptyTimer());
     },
   };
 }

@@ -1,17 +1,22 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, Check } from "lucide-react";
-import { saveSession, fmtDuration } from "@/lib/tracker";
+import {
+  saveSession,
+  fmtDuration,
+  getPendingSession,
+  clearPendingSession,
+} from "@/lib/tracker";
 
 export const Route = createFileRoute("/note")({
   head: () => ({
     meta: [
-      { title: "Leave a note — DevSketch" },
+      { title: "Leave a note — Pikup" },
       {
         name: "description",
         content: "Two quick lines for future-you: what you worked on, and what's next.",
       },
-      { property: "og:title", content: "Leave a note — DevSketch" },
+      { property: "og:title", content: "Leave a note — Pikup" },
       {
         property: "og:description",
         content: "Two quick lines for future-you: what you worked on, and what's next.",
@@ -27,15 +32,11 @@ function NotePage() {
   const navigate = useNavigate();
   const [workedOn, setWorkedOn] = useState("");
   const [nextThing, setNextThing] = useState("");
+  const [pending, setPending] = useState<{ start: number; elapsed: number } | null>(null);
 
-  const pending = (() => {
-    try {
-      const raw = sessionStorage.getItem("devsketch.pendingSession");
-      return raw ? (JSON.parse(raw) as { start: number; elapsed: number }) : null;
-    } catch {
-      return null;
-    }
-  })();
+  useEffect(() => {
+    setPending(getPendingSession());
+  }, []);
 
   const save = () => {
     if (pending) {
@@ -47,21 +48,20 @@ function NotePage() {
         workedOn: workedOn.trim() || undefined,
         nextThing: nextThing.trim() || undefined,
       });
-      sessionStorage.removeItem("devsketch.pendingSession");
+      clearPendingSession();
     }
     navigate({ to: "/" });
   };
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-4 py-10">
+      <p className="hand mb-6 text-3xl text-primary">Pikup</p>
       <div className="paper-card relative w-full max-w-xl rotate-[0.5deg] px-6 pt-12 pb-8 sm:px-10">
         <div className="washi absolute -top-3 left-8 h-7 w-24 -rotate-6" />
         <h1 className="hand text-4xl">
-          Nice session{pending ? ` — ${fmtDuration(pending.elapsed)}` : ""}! ✏️
+          Nice session{pending ? ` — ${fmtDuration(pending.elapsed)}` : ""}!
         </h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Two quick notes for future-you.
-      </p>
+        <p className="mt-1 text-sm text-muted-foreground">Two quick notes for future-you.</p>
 
         <label className="mt-6 block">
           <span className="hand text-2xl">What did you work on this session?</span>
@@ -97,7 +97,7 @@ function NotePage() {
         to="/"
         className="hand mt-8 inline-flex items-center gap-2 text-xl text-muted-foreground underline decoration-dotted underline-offset-4 hover:text-foreground"
       >
-        <ArrowLeft className="h-4 w-4" /> skip, back to the timer
+        <ArrowLeft className="h-4 w-4" /> skip, back to Pikup
       </Link>
     </main>
   );

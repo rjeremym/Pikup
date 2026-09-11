@@ -77,19 +77,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "DevSketch — solo dev session tracker" },
+      { title: "Pikup — pick up right where you left off" },
       {
         name: "description",
-        content: "A sketchbook-style deep-work timer for solo devs.",
+        content: "A sketchbook-style session tracker for solo hobbyist developers.",
       },
-      { property: "og:title", content: "DevSketch — solo dev session tracker" },
+      { property: "og:title", content: "Pikup — pick up right where you left off" },
       {
         property: "og:description",
-        content: "A sketchbook-style deep-work timer for solo devs.",
+        content: "A sketchbook-style session tracker for solo hobbyist developers.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {

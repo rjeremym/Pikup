@@ -1,11 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Pause, Play, Square, CalendarDays } from "lucide-react";
+import { Pause, Play, Square, CalendarDays, Eye, EyeOff } from "lucide-react";
 import {
   useTimer,
   fmtDuration,
   lastNote,
   getPlacedSticker,
+  setPendingSession,
   type Session,
 } from "@/lib/tracker";
 
@@ -26,17 +27,17 @@ export const STICKER_IMAGES: Record<string, string> = {
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "DevSketch — pick up right where you left off" },
+      { title: "Pikup — pick up right where you left off" },
       {
         name: "description",
         content:
-          "A sketchbook-style deep-work timer for solo devs. Start the timer, see the note you left yourself last time, and never lose the thread again.",
+          "A sketchbook-style session tracker for solo devs. Leave a note for next time, start the timer, and pick up exactly where you left off.",
       },
-      { property: "og:title", content: "DevSketch — pick up right where you left off" },
+      { property: "og:title", content: "Pikup — pick up right where you left off" },
       {
         property: "og:description",
         content:
-          "A sketchbook-style deep-work timer for solo devs. Start the timer, see the note you left yourself last time, and never lose the thread again.",
+          "A sketchbook-style session tracker for solo devs. Leave a note for next time, start the timer, and pick up exactly where you left off.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -50,22 +51,37 @@ function Index() {
   const navigate = useNavigate();
   const [note, setNote] = useState<Session | undefined>();
   const [sticker, setSticker] = useState<string | null>(null);
+  const [timerHidden, setTimerHidden] = useState(false);
 
   useEffect(() => {
     setNote(lastNote());
     setSticker(getPlacedSticker());
   }, []);
 
+  // Reveal clock again when the session ends
+  useEffect(() => {
+    if (!timer.running) setTimerHidden(false);
+  }, [timer.running]);
+
   const endSession = () => {
     const result = timer.stop();
     if (!result) return;
-    sessionStorage.setItem("devsketch.pendingSession", JSON.stringify(result));
+    setPendingSession(result);
     timer.reset();
     navigate({ to: "/note" });
   };
 
+  const hasNote = Boolean(note && (note.workedOn || note.nextThing));
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-4 py-10">
+      <header className="mb-8 text-center">
+        <h1 className="hand text-5xl text-primary sm:text-6xl">Pikup</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Start your timer and pick up exactly where you left off.
+        </p>
+      </header>
+
       <div className="relative w-full max-w-xl">
         {sticker && STICKER_IMAGES[sticker] && (
           <img
@@ -77,43 +93,81 @@ function Index() {
           />
         )}
 
-        {/* Timer + last note grouped as one unit */}
+        {/* Note + timer grouped as one unit — note leads */}
         <div className="paper-card relative px-6 pt-12 pb-8 text-center sm:px-10">
           <div className="washi absolute -top-3 left-1/2 h-7 w-28 -translate-x-1/2 -rotate-2" />
 
-          {!timer.running && note && (note.workedOn || note.nextThing) && (
-            <section className="mb-8 -rotate-1 rounded-lg border-2 border-dashed border-pencil/60 bg-muted/60 px-5 py-4 text-left">
-              <p className="hand text-2xl text-primary">
-                Last time, you left yourself this note:
-              </p>
-              {note.workedOn && (
-                <p className="mt-2 text-sm">
-                  <span className="font-semibold">Worked on: </span>
-                  {note.workedOn}
+          <section className="mb-8 -rotate-1 rounded-lg border-2 border-dashed border-pencil/60 bg-muted/60 px-5 py-5 text-left">
+            <p className="hand text-2xl text-primary sm:text-3xl">
+              Last time, you left yourself this note:
+            </p>
+            {hasNote ? (
+              <>
+                {note?.workedOn && (
+                  <p className="mt-3 text-base sm:text-lg">
+                    <span className="font-semibold">Worked on: </span>
+                    {note.workedOn}
+                  </p>
+                )}
+                {note?.nextThing && (
+                  <p className="mt-2 text-base sm:text-lg">
+                    <span className="font-semibold">Next up: </span>
+                    <span className="scribble-underline">{note.nextThing}</span>
+                  </p>
+                )}
+              </>
+            ) : (
+              <div className="mt-3 space-y-2 opacity-60">
+                <p className="text-base italic text-muted-foreground sm:text-lg">
+                  Nothing here yet…
                 </p>
-              )}
-              {note.nextThing && (
-                <p className="mt-1 text-sm">
-                  <span className="font-semibold">Next up: </span>
-                  <span className="scribble-underline">{note.nextThing}</span>
+                <p className="text-sm text-muted-foreground">
+                  End a session and leave a short note — next time you'll know exactly where to
+                  pick up.
                 </p>
-              )}
-            </section>
-          )}
+              </div>
+            )}
+          </section>
 
-          <p
-            className="font-mono text-6xl font-bold tracking-tight tabular-nums sm:text-7xl"
-            aria-live="off"
-          >
-            {fmtDuration(timer.elapsed)}
-          </p>
-          <p className="hand mt-2 text-xl text-muted-foreground">
-            {timer.running
-              ? timer.paused
-                ? "Paused"
-                : "deep work in progress…"
-              : "ready when you are"}
-          </p>
+          <div className="mt-2">
+            {timer.running && (
+              <button
+                type="button"
+                onClick={() => setTimerHidden((h) => !h)}
+                className="hand mb-2 inline-flex items-center gap-1.5 text-lg text-muted-foreground underline decoration-dotted underline-offset-4 hover:text-foreground"
+              >
+                {timerHidden ? (
+                  <>
+                    <Eye className="h-3.5 w-3.5" /> show clock
+                  </>
+                ) : (
+                  <>
+                    <EyeOff className="h-3.5 w-3.5" /> hide clock
+                  </>
+                )}
+              </button>
+            )}
+
+            {!timerHidden ? (
+              <>
+                <p
+                  className="font-mono text-4xl font-semibold tracking-tight tabular-nums text-foreground/80 sm:text-5xl"
+                  aria-live="off"
+                >
+                  {fmtDuration(timer.elapsed)}
+                </p>
+                <p className="hand mt-1 text-lg text-muted-foreground">
+                  {timer.running
+                    ? timer.paused
+                      ? "Paused"
+                      : "deep work in progress…"
+                    : "ready when you are"}
+                </p>
+              </>
+            ) : (
+              <p className="hand text-lg text-muted-foreground">clock tucked away — keep going</p>
+            )}
+          </div>
 
           <div className="mt-8 flex items-center justify-center gap-3">
             {!timer.running ? (
