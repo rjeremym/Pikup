@@ -10,53 +10,214 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as NoteRouteImport } from './routes/note'
-import { Route as SummaryRouteImport } from './routes/summary'
+import { Route as AccountRouteImport } from './routes/account'
+import { Route as IntentionsRouteImport } from './routes/intentions'
+import { Route as MomentumRouteImport } from './routes/momentum'
+import { Route as AccountIndexRouteImport } from './routes/account/index'
+import { Route as AccountCreateRouteImport } from './routes/account/create'
+import { Route as AccountPasswordRouteImport } from './routes/account/password'
+import { Route as AccountSignInRouteImport } from './routes/account/sign-in'
+import { Route as IntentionsIndexRouteImport } from './routes/intentions/index'
+import { Route as IntentionsBacklogRouteImport } from './routes/intentions/backlog'
+import { Route as IntentionsGoalsRouteImport } from './routes/intentions/goals'
+import { Route as IntentionsNotesRouteImport } from './routes/intentions/notes'
+import { Route as MomentumIndexRouteImport } from './routes/momentum/index'
+import { Route as MomentumStatsRouteImport } from './routes/momentum/stats'
+import { Route as MomentumTimerRouteImport } from './routes/momentum/timer'
+import { Route as MomentumTimerWrapUpRouteImport } from './routes/momentum/timer_.wrap-up'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const NoteRoute = NoteRouteImport.update({
-  id: '/note',
-  path: '/note',
+const AccountRoute = AccountRouteImport.update({
+  id: '/account',
+  path: '/account',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SummaryRoute = SummaryRouteImport.update({
-  id: '/summary',
-  path: '/summary',
+const IntentionsRoute = IntentionsRouteImport.update({
+  id: '/intentions',
+  path: '/intentions',
   getParentRoute: () => rootRouteImport,
+} as any)
+const MomentumRoute = MomentumRouteImport.update({
+  id: '/momentum',
+  path: '/momentum',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountIndexRoute = AccountIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AccountRoute,
+} as any)
+const AccountCreateRoute = AccountCreateRouteImport.update({
+  id: '/create',
+  path: '/create',
+  getParentRoute: () => AccountRoute,
+} as any)
+const AccountPasswordRoute = AccountPasswordRouteImport.update({
+  id: '/password',
+  path: '/password',
+  getParentRoute: () => AccountRoute,
+} as any)
+const AccountSignInRoute = AccountSignInRouteImport.update({
+  id: '/sign-in',
+  path: '/sign-in',
+  getParentRoute: () => AccountRoute,
+} as any)
+const IntentionsIndexRoute = IntentionsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => IntentionsRoute,
+} as any)
+const IntentionsBacklogRoute = IntentionsBacklogRouteImport.update({
+  id: '/backlog',
+  path: '/backlog',
+  getParentRoute: () => IntentionsRoute,
+} as any)
+const IntentionsGoalsRoute = IntentionsGoalsRouteImport.update({
+  id: '/goals',
+  path: '/goals',
+  getParentRoute: () => IntentionsRoute,
+} as any)
+const IntentionsNotesRoute = IntentionsNotesRouteImport.update({
+  id: '/notes',
+  path: '/notes',
+  getParentRoute: () => IntentionsRoute,
+} as any)
+const MomentumIndexRoute = MomentumIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => MomentumRoute,
+} as any)
+const MomentumStatsRoute = MomentumStatsRouteImport.update({
+  id: '/stats',
+  path: '/stats',
+  getParentRoute: () => MomentumRoute,
+} as any)
+const MomentumTimerRoute = MomentumTimerRouteImport.update({
+  id: '/timer',
+  path: '/timer',
+  getParentRoute: () => MomentumRoute,
+} as any)
+const MomentumTimerWrapUpRoute = MomentumTimerWrapUpRouteImport.update({
+  id: '/timer_/wrap-up',
+  path: '/timer/wrap-up',
+  getParentRoute: () => MomentumRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/note': typeof NoteRoute
-  '/summary': typeof SummaryRoute
+  '/account': typeof AccountRouteWithChildren
+  '/intentions': typeof IntentionsRouteWithChildren
+  '/momentum': typeof MomentumRouteWithChildren
+  '/account/create': typeof AccountCreateRoute
+  '/account/password': typeof AccountPasswordRoute
+  '/account/sign-in': typeof AccountSignInRoute
+  '/intentions/backlog': typeof IntentionsBacklogRoute
+  '/intentions/goals': typeof IntentionsGoalsRoute
+  '/intentions/notes': typeof IntentionsNotesRoute
+  '/momentum/stats': typeof MomentumStatsRoute
+  '/momentum/timer': typeof MomentumTimerRoute
+  '/account/': typeof AccountIndexRoute
+  '/intentions/': typeof IntentionsIndexRoute
+  '/momentum/': typeof MomentumIndexRoute
+  '/momentum/timer/wrap-up': typeof MomentumTimerWrapUpRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/note': typeof NoteRoute
-  '/summary': typeof SummaryRoute
+  '/account/create': typeof AccountCreateRoute
+  '/account/password': typeof AccountPasswordRoute
+  '/account/sign-in': typeof AccountSignInRoute
+  '/intentions/backlog': typeof IntentionsBacklogRoute
+  '/intentions/goals': typeof IntentionsGoalsRoute
+  '/intentions/notes': typeof IntentionsNotesRoute
+  '/momentum/stats': typeof MomentumStatsRoute
+  '/momentum/timer': typeof MomentumTimerRoute
+  '/account': typeof AccountIndexRoute
+  '/intentions': typeof IntentionsIndexRoute
+  '/momentum': typeof MomentumIndexRoute
+  '/momentum/timer/wrap-up': typeof MomentumTimerWrapUpRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/note': typeof NoteRoute
-  '/summary': typeof SummaryRoute
+  '/account': typeof AccountRouteWithChildren
+  '/intentions': typeof IntentionsRouteWithChildren
+  '/momentum': typeof MomentumRouteWithChildren
+  '/account/create': typeof AccountCreateRoute
+  '/account/password': typeof AccountPasswordRoute
+  '/account/sign-in': typeof AccountSignInRoute
+  '/intentions/backlog': typeof IntentionsBacklogRoute
+  '/intentions/goals': typeof IntentionsGoalsRoute
+  '/intentions/notes': typeof IntentionsNotesRoute
+  '/momentum/stats': typeof MomentumStatsRoute
+  '/momentum/timer': typeof MomentumTimerRoute
+  '/account/': typeof AccountIndexRoute
+  '/intentions/': typeof IntentionsIndexRoute
+  '/momentum/': typeof MomentumIndexRoute
+  '/momentum/timer_/wrap-up': typeof MomentumTimerWrapUpRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/note' | '/summary'
+  fullPaths:
+    | '/'
+    | '/account'
+    | '/intentions'
+    | '/momentum'
+    | '/account/create'
+    | '/account/password'
+    | '/account/sign-in'
+    | '/intentions/backlog'
+    | '/intentions/goals'
+    | '/intentions/notes'
+    | '/momentum/stats'
+    | '/momentum/timer'
+    | '/account/'
+    | '/intentions/'
+    | '/momentum/'
+    | '/momentum/timer/wrap-up'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/note' | '/summary'
-  id: '__root__' | '/' | '/note' | '/summary'
+  to:
+    | '/'
+    | '/account/create'
+    | '/account/password'
+    | '/account/sign-in'
+    | '/intentions/backlog'
+    | '/intentions/goals'
+    | '/intentions/notes'
+    | '/momentum/stats'
+    | '/momentum/timer'
+    | '/account'
+    | '/intentions'
+    | '/momentum'
+    | '/momentum/timer/wrap-up'
+  id:
+    | '__root__'
+    | '/'
+    | '/account'
+    | '/intentions'
+    | '/momentum'
+    | '/account/create'
+    | '/account/password'
+    | '/account/sign-in'
+    | '/intentions/backlog'
+    | '/intentions/goals'
+    | '/intentions/notes'
+    | '/momentum/stats'
+    | '/momentum/timer'
+    | '/account/'
+    | '/intentions/'
+    | '/momentum/'
+    | '/momentum/timer_/wrap-up'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  NoteRoute: typeof NoteRoute
-  SummaryRoute: typeof SummaryRoute
+  AccountRoute: typeof AccountRouteWithChildren
+  IntentionsRoute: typeof IntentionsRouteWithChildren
+  MomentumRoute: typeof MomentumRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -68,27 +229,172 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/note': {
-      id: '/note'
-      path: '/note'
-      fullPath: '/note'
-      preLoaderRoute: typeof NoteRouteImport
+    '/account': {
+      id: '/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AccountRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/summary': {
-      id: '/summary'
-      path: '/summary'
-      fullPath: '/summary'
-      preLoaderRoute: typeof SummaryRouteImport
+    '/intentions': {
+      id: '/intentions'
+      path: '/intentions'
+      fullPath: '/intentions'
+      preLoaderRoute: typeof IntentionsRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/momentum': {
+      id: '/momentum'
+      path: '/momentum'
+      fullPath: '/momentum'
+      preLoaderRoute: typeof MomentumRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account/': {
+      id: '/account/'
+      path: '/'
+      fullPath: '/account/'
+      preLoaderRoute: typeof AccountIndexRouteImport
+      parentRoute: typeof AccountRoute
+    }
+    '/account/create': {
+      id: '/account/create'
+      path: '/create'
+      fullPath: '/account/create'
+      preLoaderRoute: typeof AccountCreateRouteImport
+      parentRoute: typeof AccountRoute
+    }
+    '/account/password': {
+      id: '/account/password'
+      path: '/password'
+      fullPath: '/account/password'
+      preLoaderRoute: typeof AccountPasswordRouteImport
+      parentRoute: typeof AccountRoute
+    }
+    '/account/sign-in': {
+      id: '/account/sign-in'
+      path: '/sign-in'
+      fullPath: '/account/sign-in'
+      preLoaderRoute: typeof AccountSignInRouteImport
+      parentRoute: typeof AccountRoute
+    }
+    '/intentions/': {
+      id: '/intentions/'
+      path: '/'
+      fullPath: '/intentions/'
+      preLoaderRoute: typeof IntentionsIndexRouteImport
+      parentRoute: typeof IntentionsRoute
+    }
+    '/intentions/backlog': {
+      id: '/intentions/backlog'
+      path: '/backlog'
+      fullPath: '/intentions/backlog'
+      preLoaderRoute: typeof IntentionsBacklogRouteImport
+      parentRoute: typeof IntentionsRoute
+    }
+    '/intentions/goals': {
+      id: '/intentions/goals'
+      path: '/goals'
+      fullPath: '/intentions/goals'
+      preLoaderRoute: typeof IntentionsGoalsRouteImport
+      parentRoute: typeof IntentionsRoute
+    }
+    '/intentions/notes': {
+      id: '/intentions/notes'
+      path: '/notes'
+      fullPath: '/intentions/notes'
+      preLoaderRoute: typeof IntentionsNotesRouteImport
+      parentRoute: typeof IntentionsRoute
+    }
+    '/momentum/': {
+      id: '/momentum/'
+      path: '/'
+      fullPath: '/momentum/'
+      preLoaderRoute: typeof MomentumIndexRouteImport
+      parentRoute: typeof MomentumRoute
+    }
+    '/momentum/stats': {
+      id: '/momentum/stats'
+      path: '/stats'
+      fullPath: '/momentum/stats'
+      preLoaderRoute: typeof MomentumStatsRouteImport
+      parentRoute: typeof MomentumRoute
+    }
+    '/momentum/timer': {
+      id: '/momentum/timer'
+      path: '/timer'
+      fullPath: '/momentum/timer'
+      preLoaderRoute: typeof MomentumTimerRouteImport
+      parentRoute: typeof MomentumRoute
+    }
+    '/momentum/timer_/wrap-up': {
+      id: '/momentum/timer_/wrap-up'
+      path: '/timer/wrap-up'
+      fullPath: '/momentum/timer/wrap-up'
+      preLoaderRoute: typeof MomentumTimerWrapUpRouteImport
+      parentRoute: typeof MomentumRoute
     }
   }
 }
 
+interface AccountRouteChildren {
+  AccountCreateRoute: typeof AccountCreateRoute
+  AccountPasswordRoute: typeof AccountPasswordRoute
+  AccountSignInRoute: typeof AccountSignInRoute
+  AccountIndexRoute: typeof AccountIndexRoute
+}
+
+const AccountRouteChildren: AccountRouteChildren = {
+  AccountCreateRoute: AccountCreateRoute,
+  AccountPasswordRoute: AccountPasswordRoute,
+  AccountSignInRoute: AccountSignInRoute,
+  AccountIndexRoute: AccountIndexRoute,
+}
+
+const AccountRouteWithChildren =
+  AccountRoute._addFileChildren(AccountRouteChildren)
+
+interface IntentionsRouteChildren {
+  IntentionsBacklogRoute: typeof IntentionsBacklogRoute
+  IntentionsGoalsRoute: typeof IntentionsGoalsRoute
+  IntentionsNotesRoute: typeof IntentionsNotesRoute
+  IntentionsIndexRoute: typeof IntentionsIndexRoute
+}
+
+const IntentionsRouteChildren: IntentionsRouteChildren = {
+  IntentionsBacklogRoute: IntentionsBacklogRoute,
+  IntentionsGoalsRoute: IntentionsGoalsRoute,
+  IntentionsNotesRoute: IntentionsNotesRoute,
+  IntentionsIndexRoute: IntentionsIndexRoute,
+}
+
+const IntentionsRouteWithChildren = IntentionsRoute._addFileChildren(
+  IntentionsRouteChildren,
+)
+
+interface MomentumRouteChildren {
+  MomentumStatsRoute: typeof MomentumStatsRoute
+  MomentumTimerRoute: typeof MomentumTimerRoute
+  MomentumIndexRoute: typeof MomentumIndexRoute
+  MomentumTimerWrapUpRoute: typeof MomentumTimerWrapUpRoute
+}
+
+const MomentumRouteChildren: MomentumRouteChildren = {
+  MomentumStatsRoute: MomentumStatsRoute,
+  MomentumTimerRoute: MomentumTimerRoute,
+  MomentumIndexRoute: MomentumIndexRoute,
+  MomentumTimerWrapUpRoute: MomentumTimerWrapUpRoute,
+}
+
+const MomentumRouteWithChildren = MomentumRoute._addFileChildren(
+  MomentumRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  NoteRoute: NoteRoute,
-  SummaryRoute: SummaryRoute,
+  AccountRoute: AccountRouteWithChildren,
+  IntentionsRoute: IntentionsRouteWithChildren,
+  MomentumRoute: MomentumRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

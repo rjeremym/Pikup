@@ -61,11 +61,13 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-body);
-    background-image: radial-gradient(
-      oklch(0.92 0.02 90 / 0.5) 1px,
-      transparent 1px
-    );
+    background-image: radial-gradient(oklch(0.92 0.02 90 / 0.5) 1px, transparent 1px);
     background-size: 22px 22px;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
   }
 }
 
@@ -97,5 +99,26 @@
     text-decoration-color: var(--color-primary);
     text-decoration-thickness: 2px;
     text-underline-offset: 6px;
+  }
+
+  /* shared sketchbook controls, so every page's buttons/fields look and behave alike */
+  .sketch-btn {
+    @apply font-hand inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-pencil bg-card px-5 py-2 text-xl text-foreground transition-transform hover:-translate-y-0.5 disabled:pointer-events-none disabled:opacity-50;
+  }
+
+  .sketch-btn-primary {
+    @apply font-hand inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-primary bg-primary px-6 py-2 text-2xl text-primary-foreground shadow-[3px_4px_0_oklch(0.35_0.05_50/0.5)] transition-transform hover:-translate-y-0.5 active:translate-y-0 active:shadow-none disabled:pointer-events-none disabled:opacity-50;
+  }
+
+  .sketch-input {
+    @apply w-full rounded-xl border-2 border-input bg-background px-4 py-2.5 outline-none focus:border-ring disabled:opacity-60;
+  }
+
+  .sketch-chip {
+    @apply inline-flex items-center gap-1 rounded-full border-2 border-dashed border-pencil/50 bg-card px-3 py-0.5 text-sm transition-colors hover:bg-muted aria-pressed:border-solid aria-pressed:border-accent-foreground/60 aria-pressed:bg-accent/40;
+  }
+
+  .sketch-link {
+    @apply font-hand inline-flex items-center gap-1.5 text-lg text-muted-foreground underline decoration-dotted underline-offset-4 hover:text-foreground;
   }
 }
