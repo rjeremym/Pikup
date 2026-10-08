@@ -14,13 +14,13 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "A sketchbook for solo web developers: a focus timer that remembers where you left off, plus your goals, backlog and notes.",
+          "A sketchbook for solo developers: a focus timer that remembers where you left off, plus your goals, backlog and notes.",
       },
       { property: "og:title", content: "Pikup — keep your momentum and your intentions" },
       {
         property: "og:description",
         content:
-          "A sketchbook for solo web developers: a focus timer that remembers where you left off, plus your goals, backlog and notes.",
+          "A sketchbook for solo developers: a focus timer that remembers where you left off, plus your goals, backlog and notes.",
       },
     ],
   }),
@@ -47,7 +47,7 @@ function Landing() {
       {/* Hero: the promise, one primary action, and a peek at the core value (last note) */}
       <section className="mx-auto grid max-w-5xl gap-12 px-4 pt-12 pb-16 sm:pt-20 lg:grid-cols-[1fr_17rem] lg:items-center">
         <div>
-          <p className="hand text-xl text-muted-foreground">a sketchbook for solo web devs</p>
+          <p className="hand text-xl text-muted-foreground">a sketchbook for solo devs</p>
           <h1 className="hand mt-3 text-5xl leading-[1.08] sm:text-7xl">
             Keep your <span className="scribble-underline text-primary">momentum</span>{" "}
             <span className="relative inline-block px-1">

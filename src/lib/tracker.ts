@@ -28,6 +28,24 @@ export function workedOnLabel(s: Session): string {
 /** Topics a session note (or backlog item) can be tagged with. */
 export const TOPICS = ["Frontend", "Backend", "Styling", "Bug fix", "Refactor", "Learning"];
 
+const CUSTOM_TOPICS_KEY = "pikup.customTopics";
+
+/** Built-in topics followed by any the user has added. */
+export function getTopics(): string[] {
+  if (typeof localStorage === "undefined") return TOPICS;
+  return [...TOPICS, ...read<string[]>(CUSTOM_TOPICS_KEY, [])];
+}
+
+/** Saves a custom topic and returns its stored spelling (reusing an existing match, case-insensitive). */
+export function addTopic(name: string): string {
+  const trimmed = name.trim();
+  const existing = getTopics().find((t) => t.toLowerCase() === trimmed.toLowerCase());
+  if (existing) return existing;
+  const custom = read<string[]>(CUSTOM_TOPICS_KEY, []);
+  localStorage.setItem(CUSTOM_TOPICS_KEY, JSON.stringify([...custom, trimmed]));
+  return trimmed;
+}
+
 const SESSIONS_KEY = "pikup.sessions";
 const STICKERS_KEY = "pikup.stickers";
 const PLACED_KEY = "pikup.placedSticker";

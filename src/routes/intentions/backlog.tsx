@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
-import { ChevronUp, Plus, Trash2, Undo2 } from "lucide-react";
+import { ChevronUp, Plus, Trash2, Undo2, X } from "lucide-react";
 import { PageHeader } from "@/components/section-layout";
 import { Notice } from "@/components/form-bits";
 import {
@@ -10,7 +10,9 @@ import {
   type BacklogItem,
   type Lane,
 } from "@/lib/intentions";
-import { TOPICS } from "@/lib/tracker";
+import { TOPICS, addTopic, getTopics } from "@/lib/tracker";
+
+const NEW_TOPIC = "__new";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/intentions/backlog")({
@@ -30,11 +32,15 @@ function BacklogPage() {
   const [items, setItems] = useState<BacklogItem[] | null>(null);
   const [title, setTitle] = useState("");
   const [topic, setTopic] = useState("");
+  const [topics, setTopics] = useState<string[]>(TOPICS);
+  /** null while picking from the list; a string while typing a new topic */
+  const [newTopic, setNewTopic] = useState<string | null>(null);
   const [justAdded, setJustAdded] = useState<string | null>(null);
   const [removed, setRemoved] = useState<{ item: BacklogItem; index: number } | null>(null);
 
   useEffect(() => {
     setItems(getBacklog());
+    setTopics(getTopics());
   }, []);
 
   const commit = (next: BacklogItem[]) => {
@@ -49,10 +55,17 @@ function BacklogPage() {
     e.preventDefault();
     const t = title.trim();
     if (!t || !items) return;
+    let itemTopic = topic || undefined;
+    if (newTopic?.trim()) {
+      itemTopic = addTopic(newTopic);
+      setTopics(getTopics());
+      setTopic(itemTopic);
+      setNewTopic(null);
+    }
     const item: BacklogItem = {
       id: crypto.randomUUID(),
       title: t,
-      topic: topic || undefined,
+      topic: itemTopic,
       lane: "later",
     };
     commit([...items, item]);
@@ -133,24 +146,58 @@ function BacklogPage() {
           className="sketch-input min-w-[14rem] flex-1"
         />
         <label htmlFor="item-topic" className="sr-only">
-          Topic
+          {newTopic === null ? "Topic" : "New topic name"}
         </label>
-        <select
-          id="item-topic"
-          value={topic}
-          onChange={(e) => setTopic(e.target.value)}
-          className="sketch-input w-auto"
-        >
-          <option value="">No topic</option>
-          {TOPICS.map((t) => (
-            <option key={t}>{t}</option>
-          ))}
-        </select>
+        {newTopic === null ? (
+          <select
+            id="item-topic"
+            value={topic}
+            onChange={(e) => {
+              if (e.target.value === NEW_TOPIC) {
+                setNewTopic("");
+              } else {
+                setTopic(e.target.value);
+              }
+            }}
+            className="sketch-input w-auto"
+          >
+            <option value="">No topic</option>
+            {topics.map((t) => (
+              <option key={t}>{t}</option>
+            ))}
+            <option value={NEW_TOPIC}>+ New topic…</option>
+          </select>
+        ) : (
+          <span className="relative inline-flex">
+            <input
+              id="item-topic"
+              value={newTopic}
+              onChange={(e) => setNewTopic(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") setNewTopic(null);
+              }}
+              placeholder="New topic, e.g. Audio"
+              maxLength={24}
+              autoFocus
+              className="sketch-input w-44 pr-9"
+            />
+            <button
+              type="button"
+              onClick={() => setNewTopic(null)}
+              aria-label="Cancel new topic"
+              title="Cancel new topic"
+              className="absolute top-1/2 right-2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </span>
+        )}
         <button type="submit" disabled={!title.trim()} className="sketch-btn-primary text-xl">
           <Plus className="h-5 w-5" aria-hidden /> Add
         </button>
         <p className="w-full px-1 text-xs text-muted-foreground">
           New items land at the bottom of <strong>Later</strong>. Move them up when they matter.
+          Pick <strong>+ New topic…</strong> to add your own tag.
         </p>
       </form>
 
