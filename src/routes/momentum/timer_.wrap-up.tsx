@@ -8,6 +8,7 @@ import {
   clearPendingSession,
   lastNote,
   TOPICS,
+  getTopics,
   OUTCOME_LABELS,
   type SessionOutcome,
 } from "@/lib/tracker";
@@ -49,8 +50,10 @@ function NotePage() {
   const [upNext, setUpNext] = useState<BacklogItem[]>([]);
   const [planned, setPlanned] = useState<string | undefined>();
   const [outcome, setOutcome] = useState<SessionOutcome | undefined>();
+  const [topics, setTopics] = useState<string[]>(TOPICS);
 
   useEffect(() => {
+    setTopics(getTopics());
     setPending(getPendingSession());
     setUpNext(getBacklog().filter((i) => i.lane === "next"));
     setPlanned(lastNote()?.nextThing);
@@ -204,7 +207,7 @@ function NotePage() {
             later
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
-            {TOPICS.map((t) => (
+            {topics.map((t) => (
               <button
                 key={t}
                 type="button"
