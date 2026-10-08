@@ -7,13 +7,34 @@ export interface Session {
   durationSec: number;
   workedOn?: string | undefined;
   nextThing?: string | undefined;
+  topic?: string | undefined;
+  /** How the previous session's "next thing" went; absent on older notes */
+  outcome?: SessionOutcome | undefined;
 }
+
+export type SessionOutcome = "completed" | "in-progress" | "other";
+
+export const OUTCOME_LABELS: Record<SessionOutcome, string> = {
+  completed: "Completed",
+  "in-progress": "In progress",
+  other: "Did something else",
+};
+
+/** Label shown before a note's `workedOn` text. */
+export function workedOnLabel(s: Session): string {
+  return s.outcome ? OUTCOME_LABELS[s.outcome] : "Worked on";
+}
+
+/** Topics a session note (or backlog item) can be tagged with. */
+export const TOPICS = ["Frontend", "Backend", "Styling", "Bug fix", "Refactor", "Learning"];
 
 const SESSIONS_KEY = "pikup.sessions";
 const STICKERS_KEY = "pikup.stickers";
 const PLACED_KEY = "pikup.placedSticker";
 const TIMER_KEY = "pikup.timer";
 const PENDING_KEY = "pikup.pendingSession";
+/** Fired whenever the timer is saved, so every useTimer() on screen (e.g. the header pill) stays in sync. */
+const TIMER_EVENT = "pikup:timer";
 
 /** Migrate old DevSketch keys once so existing local data isn't lost. */
 function migrateKeys() {
@@ -29,7 +50,10 @@ function migrateKeys() {
     }
   }
   if (typeof sessionStorage !== "undefined") {
-    if (!sessionStorage.getItem(PENDING_KEY) && sessionStorage.getItem("devsketch.pendingSession")) {
+    if (
+      !sessionStorage.getItem(PENDING_KEY) &&
+      sessionStorage.getItem("devsketch.pendingSession")
+    ) {
       sessionStorage.setItem(PENDING_KEY, sessionStorage.getItem("devsketch.pendingSession")!);
       sessionStorage.removeItem("devsketch.pendingSession");
     }
@@ -95,15 +119,63 @@ export function clearPendingSession() {
   sessionStorage.removeItem(PENDING_KEY);
 }
 
-/** seconds accumulated in the week containing `ref` (default now) */
-export function weekSeconds(ref = new Date()): number {
+/** Monday 00:00 of the week containing `ref` */
+export function startOfWeek(ref = new Date()): Date {
   const day = (ref.getDay() + 6) % 7; // Monday = 0
   const weekStart = new Date(ref);
   weekStart.setHours(0, 0, 0, 0);
   weekStart.setDate(ref.getDate() - day);
-  return getSessions()
-    .filter((s) => s.start >= weekStart.getTime())
-    .reduce((acc, s) => acc + s.durationSec, 0);
+  return weekStart;
+}
+
+/** seconds accumulated in the week containing `ref` (default now) */
+export function weekSeconds(ref = new Date()): number {
+  return sessionsThisWeek(ref).reduce((acc, s) => acc + s.durationSec, 0);
+}
+
+export function sessionsThisWeek(ref = new Date()): Session[] {
+  const weekStart = startOfWeek(ref).getTime();
+  return getSessions().filter((s) => s.start >= weekStart);
+}
+
+export interface DayBucket {
+  label: string;
+  date: number;
+  seconds: number;
+  isToday: boolean;
+}
+
+/** Mon–Sun of the current week, seconds per day */
+export function daysThisWeek(now = new Date()): DayBucket[] {
+  const weekStart = startOfWeek(now);
+  const sessions = getSessions();
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(weekStart);
+    d.setDate(weekStart.getDate() + i);
+    const next = new Date(d);
+    next.setDate(d.getDate() + 1);
+    return {
+      label: d.toLocaleDateString(undefined, { weekday: "short" }),
+      date: d.getTime(),
+      seconds: sessions
+        .filter((s) => s.start >= d.getTime() && s.start < next.getTime())
+        .reduce((a, s) => a + s.durationSec, 0),
+      isToday: d.toDateString() === now.toDateString(),
+    };
+  });
+}
+
+/** Consecutive days with at least one session, counting back from today (or yesterday, if today is still empty). */
+export function dayStreak(now = new Date()): number {
+  const days = new Set(getSessions().map((s) => new Date(s.start).toDateString()));
+  const cursor = new Date(now);
+  if (!days.has(cursor.toDateString())) cursor.setDate(cursor.getDate() - 1);
+  let streak = 0;
+  while (days.has(cursor.toDateString())) {
+    streak++;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return streak;
 }
 
 export interface WeekBucket {
@@ -147,6 +219,14 @@ export function fmtHours(sec: number): string {
   return `${Math.round(h * 10) / 10}h`;
 }
 
+/** 48m, 1h 12m */
+export function fmtMinutes(sec: number): string {
+  const totalMin = Math.round(sec / 60);
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  return h ? `${h}h ${m}m` : `${m}m`;
+}
+
 /** Wall-clock timer persistence — elapsed is derived from Date.now(), not ticks. */
 interface PersistedTimer {
   running: boolean;
@@ -176,6 +256,7 @@ function loadTimer(): PersistedTimer {
 function saveTimer(t: PersistedTimer) {
   if (typeof localStorage === "undefined") return;
   localStorage.setItem(TIMER_KEY, JSON.stringify(t));
+  window.dispatchEvent(new Event(TIMER_EVENT));
 }
 
 /** Elapsed seconds from wall clock, excluding paused time. */
@@ -201,11 +282,24 @@ export function useTimer(): TimerState {
   const [timer, setTimer] = useState<PersistedTimer>(emptyTimer);
   const [elapsed, setElapsed] = useState(0);
 
-  // Hydrate from localStorage after mount (avoids SSR mismatch; restores mid-session)
+  // Hydrate from localStorage after mount (avoids SSR mismatch; restores mid-session),
+  // then follow changes made by other useTimer() instances or other tabs.
   useEffect(() => {
-    const loaded = loadTimer();
-    setTimer(loaded);
-    setElapsed(wallElapsedSec(loaded));
+    const sync = () => {
+      const loaded = loadTimer();
+      setTimer(loaded);
+      setElapsed(wallElapsedSec(loaded));
+    };
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === TIMER_KEY) sync();
+    };
+    sync();
+    window.addEventListener(TIMER_EVENT, sync);
+    window.addEventListener("storage", onStorage);
+    return () => {
+      window.removeEventListener(TIMER_EVENT, sync);
+      window.removeEventListener("storage", onStorage);
+    };
   }, []);
 
   const commit = (next: PersistedTimer) => {
