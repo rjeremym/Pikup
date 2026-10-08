@@ -118,6 +118,15 @@
     @apply inline-flex items-center gap-1 rounded-full border-2 border-dashed border-pencil/50 bg-card px-3 py-0.5 text-sm transition-colors hover:bg-muted aria-pressed:border-solid aria-pressed:border-accent-foreground/60 aria-pressed:bg-accent/40;
   }
 
+  /* big must-pick choice, deliberately heavier than .sketch-chip */
+  .sketch-option {
+    @apply font-hand flex flex-col items-center justify-center gap-1 rounded-2xl border-2 border-pencil bg-card px-3 py-3 text-center text-xl leading-tight text-foreground shadow-[2px_3px_0_oklch(0.5_0.02_60/0.25)] transition-transform hover:-translate-y-0.5 aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:shadow-[3px_4px_0_oklch(0.35_0.05_50/0.5)];
+  }
+
+  .sticky-note {
+    @apply relative inline-block max-w-full -rotate-1 rounded-sm bg-washi px-5 pt-5 pb-3 shadow-[2px_4px_0_oklch(0.5_0.02_60/0.2)];
+  }
+
   .sketch-link {
     @apply font-hand inline-flex items-center gap-1.5 text-lg text-muted-foreground underline decoration-dotted underline-offset-4 hover:text-foreground;
   }

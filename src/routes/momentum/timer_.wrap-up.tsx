@@ -1,14 +1,24 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Check } from "lucide-react";
+import { ArrowLeft, Check, Hourglass, Shuffle, type LucideIcon } from "lucide-react";
 import {
   saveSession,
   fmtDuration,
   getPendingSession,
   clearPendingSession,
+  lastNote,
   TOPICS,
+  OUTCOME_LABELS,
+  type SessionOutcome,
 } from "@/lib/tracker";
-import { getBacklog, type BacklogItem } from "@/lib/intentions";
+import { getBacklog, saveBacklog, type BacklogItem } from "@/lib/intentions";
+
+const OUTCOMES: SessionOutcome[] = ["completed", "in-progress", "other"];
+const OUTCOME_ICONS: Record<SessionOutcome, LucideIcon> = {
+  completed: Check,
+  "in-progress": Hourglass,
+  other: Shuffle,
+};
 
 export const Route = createFileRoute("/momentum/timer_/wrap-up")({
   head: () => ({
@@ -37,11 +47,29 @@ function NotePage() {
   const [topic, setTopic] = useState<string | undefined>();
   const [pending, setPending] = useState<{ start: number; elapsed: number } | null>(null);
   const [upNext, setUpNext] = useState<BacklogItem[]>([]);
+  const [planned, setPlanned] = useState<string | undefined>();
+  const [outcome, setOutcome] = useState<SessionOutcome | undefined>();
 
   useEffect(() => {
     setPending(getPendingSession());
     setUpNext(getBacklog().filter((i) => i.lane === "next"));
+    setPlanned(lastNote()?.nextThing);
   }, []);
+
+  const pickOutcome = (o: SessionOutcome) => {
+    setOutcome(o);
+    if (!planned) return;
+    if (o === "in-progress" && !nextThing.trim()) setNextThing(planned);
+    else if (o !== "in-progress" && nextThing === planned) setNextThing("");
+  };
+
+  const workedOnFor = (): string | undefined => {
+    const text = workedOn.trim();
+    if (!planned) return text || undefined;
+    if (outcome === "completed") return planned;
+    if (outcome === "in-progress") return text || planned;
+    return text || undefined;
+  };
 
   const save = () => {
     if (pending) {
@@ -50,11 +78,22 @@ function NotePage() {
         start: pending.start,
         end: pending.start + pending.elapsed * 1000,
         durationSec: pending.elapsed,
-        workedOn: workedOn.trim() || undefined,
+        workedOn: workedOnFor(),
         nextThing: nextThing.trim() || undefined,
         topic,
+        outcome: planned ? outcome : undefined,
       });
       clearPendingSession();
+    }
+    if (planned && outcome === "completed") {
+      const backlog = getBacklog();
+      const match = backlog.find((i) => i.lane !== "done" && i.title === planned);
+      if (match) {
+        saveBacklog([
+          ...backlog.filter((i) => i.id !== match.id),
+          { ...match, lane: "done" },
+        ]);
+      }
     }
     navigate({ to: "/momentum/timer" });
   };
@@ -68,19 +107,70 @@ function NotePage() {
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">Two quick notes for future-you.</p>
 
-        <label className="mt-6 block">
-          <span className="hand text-2xl">What did you work on this session?</span>
-          <input
-            value={workedOn}
-            onChange={(e) => setWorkedOn(e.target.value)}
-            placeholder="e.g. tile collision for the jump mechanic"
-            className="mt-1 w-full rounded-xl border-2 border-input bg-background px-4 py-3 outline-none focus:border-ring"
-            maxLength={140}
-          />
-        </label>
+        {planned ? (
+          <fieldset className="mt-8">
+            <legend className="hand text-3xl">How did it go?</legend>
+            <div className="sticky-note mt-3">
+              <div className="absolute -top-2 left-6 h-4 w-14 rotate-3 rounded-sm bg-accent/50" />
+              <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                Last time you planned
+              </p>
+              <p className="hand text-2xl leading-snug">{planned}</p>
+            </div>
+            <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              {OUTCOMES.map((o) => {
+                const Icon = OUTCOME_ICONS[o];
+                return (
+                  <button
+                    key={o}
+                    type="button"
+                    onClick={() => pickOutcome(o)}
+                    aria-pressed={outcome === o}
+                    className="sketch-option"
+                  >
+                    <Icon className="h-6 w-6" aria-hidden />
+                    {OUTCOME_LABELS[o]}
+                  </button>
+                );
+              })}
+            </div>
+            {(outcome === "in-progress" || outcome === "other") && (
+              <label className="mt-4 block">
+                <span className="text-sm text-muted-foreground">
+                  {outcome === "in-progress"
+                    ? "Where did you get to? (optional)"
+                    : "What did you work on instead? (optional)"}
+                </span>
+                <input
+                  value={workedOn}
+                  onChange={(e) => setWorkedOn(e.target.value)}
+                  placeholder={
+                    outcome === "in-progress"
+                      ? "e.g. collision works, still jittery on slopes"
+                      : "e.g. fixed the save-file crash"
+                  }
+                  className="mt-1 w-full rounded-xl border-2 border-input bg-background px-4 py-3 outline-none focus:border-ring"
+                  maxLength={140}
+                  autoFocus
+                />
+              </label>
+            )}
+          </fieldset>
+        ) : (
+          <label className="mt-8 block">
+            <span className="hand text-3xl">What did you work on?</span>
+            <input
+              value={workedOn}
+              onChange={(e) => setWorkedOn(e.target.value)}
+              placeholder="e.g. tile collision for the jump mechanic"
+              className="mt-1 w-full rounded-xl border-2 border-input bg-background px-4 py-3 outline-none focus:border-ring"
+              maxLength={140}
+            />
+          </label>
+        )}
 
-        <label className="mt-5 block">
-          <span className="hand text-2xl">What's the next thing to tackle?</span>
+        <label className="mt-8 block border-t-2 border-dashed border-pencil/30 pt-8">
+          <span className="hand text-3xl">What's the next thing to tackle?</span>
           <input
             value={nextThing}
             onChange={(e) => setNextThing(e.target.value)}
@@ -107,11 +197,12 @@ function NotePage() {
           </div>
         )}
 
-        <fieldset className="mt-5">
-          <legend className="hand text-2xl">
-            Topic <span className="text-lg text-muted-foreground">(optional)</span>
-          </legend>
-          <p className="text-sm text-muted-foreground">Helps you find this note again later.</p>
+        <fieldset className="mt-8 border-t-2 border-dashed border-pencil/30 pt-6">
+          <legend className="sr-only">Topic (optional)</legend>
+          <p className="text-sm text-muted-foreground">
+            <span className="font-semibold">Topic</span> (optional) · helps you find this note
+            later
+          </p>
           <div className="mt-2 flex flex-wrap gap-2">
             {TOPICS.map((t) => (
               <button

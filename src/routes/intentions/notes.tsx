@@ -5,7 +5,7 @@ import { endOfDay, format, isToday, isYesterday, parseISO, startOfDay, subDays }
 import { PageHeader } from "@/components/section-layout";
 import { Notice } from "@/components/form-bits";
 import { exampleNotes } from "@/lib/examples";
-import { fmtMinutes, getSessions, type Session } from "@/lib/tracker";
+import { fmtMinutes, getSessions, workedOnLabel, type Session } from "@/lib/tracker";
 
 export const Route = createFileRoute("/intentions/notes")({
   head: () => ({
@@ -297,7 +297,7 @@ function NoteCard({
       </div>
       {note.workedOn && (
         <p className="mt-2">
-          <span className="font-semibold">Worked on: </span>
+          <span className="font-semibold">{workedOnLabel(note)}: </span>
           <Highlight text={note.workedOn} query={query} />
         </p>
       )}

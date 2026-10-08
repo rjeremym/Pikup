@@ -7,6 +7,7 @@ import {
   lastNote,
   getPlacedSticker,
   setPendingSession,
+  workedOnLabel,
   type Session,
 } from "@/lib/tracker";
 import { STICKER_IMAGES } from "@/lib/stickers";
@@ -92,7 +93,7 @@ function TimerPage() {
               <>
                 {note?.workedOn && (
                   <p className="mt-3 text-base sm:text-lg">
-                    <span className="font-semibold">Worked on: </span>
+                    <span className="font-semibold">{workedOnLabel(note)}: </span>
                     {note.workedOn}
                   </p>
                 )}

@@ -8,6 +8,21 @@ export interface Session {
   workedOn?: string | undefined;
   nextThing?: string | undefined;
   topic?: string | undefined;
+  /** How the previous session's "next thing" went; absent on older notes */
+  outcome?: SessionOutcome | undefined;
+}
+
+export type SessionOutcome = "completed" | "in-progress" | "other";
+
+export const OUTCOME_LABELS: Record<SessionOutcome, string> = {
+  completed: "Completed",
+  "in-progress": "In progress",
+  other: "Did something else",
+};
+
+/** Label shown before a note's `workedOn` text. */
+export function workedOnLabel(s: Session): string {
+  return s.outcome ? OUTCOME_LABELS[s.outcome] : "Worked on";
 }
 
 /** Topics a session note (or backlog item) can be tagged with. */

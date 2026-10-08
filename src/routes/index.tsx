@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowRight, Play } from "lucide-react";
-import { lastNote, useTimer, type Session } from "@/lib/tracker";
+import { lastNote, useTimer, workedOnLabel, type Session } from "@/lib/tracker";
 import { useAccount } from "@/lib/account";
 import { TONE, sectionById, visibleChildren, type NavSection } from "@/lib/nav";
 import { PageLinkContent } from "@/components/site-header";
@@ -65,7 +65,7 @@ function Landing() {
               />
               <span className="relative text-accent-foreground">intentions</span>
             </span>{" "}
-            in web development
+            in development
           </h1>
           <p className="mt-6 max-w-xl text-lg text-muted-foreground">
             Pikup remembers where you left off, so even a short session starts moving straight away
@@ -94,7 +94,7 @@ function Landing() {
             <div className="mt-2 space-y-1.5 text-sm">
               {note.workedOn && (
                 <p>
-                  <span className="font-semibold">Worked on: </span>
+                  <span className="font-semibold">{workedOnLabel(note)}: </span>
                   {note.workedOn}
                 </p>
               )}
