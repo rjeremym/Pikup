@@ -142,6 +142,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       workedOn || nextThing ? "Session and note saved." : "Session saved without a note.";
     setFeedback(message);
     toast.success(message);
+    navigate({ to: "/momentum/stats" });
   };
 
   const restoreFocus = (event: Event) => {
