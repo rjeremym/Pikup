@@ -1,3 +1,4 @@
+import { useSessionRevision } from "@/lib/session-context";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Meter, PageCard, PageHeader } from "@/components/section-layout";
@@ -34,6 +35,7 @@ interface Snapshot {
 }
 
 function IntentionsHub() {
+  const revision = useSessionRevision();
   const [data, setData] = useState<Snapshot | null>(null);
 
   useEffect(() => {
@@ -44,7 +46,7 @@ function IntentionsHub() {
       backlog: getBacklog(),
       notes: getSessions().filter((s) => s.workedOn || s.nextThing),
     });
-  }, []);
+  }, [revision]);
 
   const upNext = data?.backlog.filter((i) => i.lane === "next") ?? [];
   const openGoals = data?.goals.filter((g) => !g.done).length ?? 0;

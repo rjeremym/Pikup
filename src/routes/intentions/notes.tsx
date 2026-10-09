@@ -1,3 +1,4 @@
+import { useSessionRevision } from "@/lib/session-context";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Search, X } from "lucide-react";
@@ -31,6 +32,7 @@ type Range = (typeof RANGES)[number]["id"];
 const UNTAGGED = "Untagged";
 
 function NotesPage() {
+  const revision = useSessionRevision();
   const [notes, setNotes] = useState<Session[] | null>(null);
   const [examples, setExamples] = useState(false);
   const [query, setQuery] = useState("");
@@ -45,7 +47,7 @@ function NotesPage() {
       .sort((a, b) => b.start - a.start);
     setExamples(own.length === 0);
     setNotes(own.length ? own : exampleNotes());
-  }, []);
+  }, [revision]);
 
   const topics = useMemo(() => {
     const set = new Set((notes ?? []).map((n) => n.topic ?? UNTAGGED));

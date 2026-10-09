@@ -22,6 +22,15 @@ export function SectionLayout({ sectionId }: { sectionId: SectionId }) {
   const tone = TONE[sectionId];
   const tabs: NavPage[] = [{ ...section, label: "Overview" }, ...visibleChildren(section)];
 
+  // Main destinations are already in the header; keep secondary account navigation local.
+  if (sectionId !== "account") {
+    return (
+      <div className="mx-auto w-full max-w-5xl px-4 pt-1 pb-20">
+        <Outlet />
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto w-full max-w-5xl px-4 pt-5 pb-20">
       <Breadcrumbs trail={trailFor(pathname)} />

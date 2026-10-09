@@ -1,3 +1,4 @@
+import { useSessionRevision } from "@/lib/session-context";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { ArrowRight, CalendarClock, Minus, Plus, Trash2, Undo2 } from "lucide-react";
@@ -36,6 +37,7 @@ function todayISO() {
 }
 
 function GoalsPage() {
+  const revision = useSessionRevision();
   const [target, setTarget] = useState(6);
   const [week, setWeek] = useState({ seconds: 0, avg: 0 });
   const [goals, setGoals] = useState<Goal[] | null>(null);
@@ -49,7 +51,7 @@ function GoalsPage() {
     setTarget(getWeeklyGoalHours());
     setWeek({ seconds, avg: sessions.length ? seconds / sessions.length : 0 });
     setGoals(getGoals());
-  }, []);
+  }, [revision]);
 
   const changeTarget = (step: number) => {
     const next = Math.min(MAX_TARGET, Math.max(MIN_TARGET, target + step));

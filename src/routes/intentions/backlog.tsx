@@ -1,4 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { useSessionRevision } from "@/lib/session-context";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { ChevronUp, Plus, Trash2, Undo2, X } from "lucide-react";
 import { PageHeader } from "@/components/section-layout";
@@ -29,6 +30,7 @@ export const Route = createFileRoute("/intentions/backlog")({
 });
 
 function BacklogPage() {
+  const revision = useSessionRevision();
   const [items, setItems] = useState<BacklogItem[] | null>(null);
   const [title, setTitle] = useState("");
   const [topic, setTopic] = useState("");
@@ -41,7 +43,7 @@ function BacklogPage() {
   useEffect(() => {
     setItems(getBacklog());
     setTopics(getTopics());
-  }, []);
+  }, [revision]);
 
   const commit = (next: BacklogItem[]) => {
     saveBacklog(next);
@@ -128,7 +130,11 @@ function BacklogPage() {
       <PageHeader
         title="Product backlog"
         lead="Everything you mean to build. Keep the next few up front, so a session never starts with “what now?”"
-      />
+      >
+        <Link to="/intentions/goals" className="sketch-link">
+          Goals
+        </Link>
+      </PageHeader>
 
       <form
         onSubmit={add}
@@ -215,7 +221,7 @@ function BacklogPage() {
       )}
 
       {items && (
-        <div className="mt-10 grid gap-8 md:grid-cols-2">
+        <div className="mt-10 grid grid-cols-1 gap-8 md:grid-cols-2">
           <LaneCard
             id="lane-next"
             title="Up next"
@@ -274,7 +280,7 @@ function LaneCard({
   children: ReactNode[];
 }) {
   return (
-    <section aria-labelledby={id} className="paper-card relative px-5 pt-9 pb-5">
+    <section aria-labelledby={id} className="paper-card relative min-w-0 px-3 pt-9 pb-5 sm:px-5">
       <div className={cn("absolute -top-3 left-8 h-7 w-24 -rotate-2 rounded-sm", tape)} />
       <div className="flex items-baseline justify-between gap-2">
         <h2 id={id} className="hand text-3xl">
@@ -331,7 +337,7 @@ function ItemRow({
         <label
           htmlFor={checkboxId}
           className={cn(
-            "cursor-pointer leading-snug",
+            "cursor-pointer leading-snug break-words",
             done && "text-muted-foreground line-through",
           )}
         >
