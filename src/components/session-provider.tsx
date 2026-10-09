@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useLocation, useNavigate } from "@tanstack/react-router";
 import { ArrowRight, NotebookPen, Pause, Timer } from "lucide-react";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
@@ -37,6 +38,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [revision, setRevision] = useState(0);
   const [feedback, setFeedback] = useState("");
   const returnFocus = useRef<HTMLElement | null>(null);
+  const navigate = useNavigate();
+  const pathname = useLocation({ select: (location) => location.pathname });
 
   useEffect(() => {
     const saved = getPendingSession();
@@ -71,6 +74,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setWelcomeOpen(showWelcome);
     setReminder(previous ?? null);
     setFeedback("Session started.");
+    // The home page only starts sessions; running one happens on the session page.
+    if (pathname === "/") navigate({ to: "/momentum/timer" });
   };
 
   const endSession = () => {
