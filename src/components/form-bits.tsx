@@ -1,5 +1,5 @@
 import { useId, useState, type InputHTMLAttributes, type ReactNode } from "react";
-import { Check, Circle, CircleAlert, Eye, EyeOff, Info } from "lucide-react";
+import { Check, Circle, CircleAlert, Eye, EyeOff, Info, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface TextFieldProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -106,10 +106,13 @@ export function Notice({
   children,
   tone = "info",
   className,
+  onDismiss,
 }: {
   children: ReactNode;
   tone?: "info" | "success";
   className?: string | undefined;
+  /** shows a close button */
+  onDismiss?: () => void;
 }) {
   return (
     <div
@@ -127,7 +130,17 @@ export function Notice({
       ) : (
         <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
       )}
-      <div>{children}</div>
+      <div className={onDismiss && "flex-1"}>{children}</div>
+      {onDismiss && (
+        <button
+          type="button"
+          onClick={onDismiss}
+          aria-label="Dismiss"
+          className="-my-1 -mr-2 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg hover:bg-muted hover:text-foreground"
+        >
+          <X className="h-4 w-4" aria-hidden />
+        </button>
+      )}
     </div>
   );
 }
