@@ -132,6 +132,36 @@ export function Notice({
   );
 }
 
+/** A traditional centred account card: title, form, then a footer line linking to the other form. */
+export function AuthCard({
+  title,
+  lead,
+  footer,
+  children,
+}: {
+  title: string;
+  lead?: ReactNode;
+  footer?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <div className="mx-auto mt-10 w-full max-w-md">
+      <section className="paper-card relative px-6 pt-10 pb-6 sm:px-8">
+        <div className="washi absolute -top-3 left-1/2 h-7 w-24 -translate-x-1/2 -rotate-2" />
+        <h1 className="hand text-center text-5xl">{title}</h1>
+        {lead && <p className="mt-2 text-center text-muted-foreground">{lead}</p>}
+        <div className="mt-8">{children}</div>
+        {footer && (
+          <div className="mt-6 border-t-2 border-dashed border-pencil/30 pt-5 text-center text-sm text-muted-foreground">
+            {footer}
+          </div>
+        )}
+      </section>
+      <PrototypeNotice className="mt-6" />
+    </div>
+  );
+}
+
 export function PrototypeNotice({ className }: { className?: string }) {
   return (
     <Notice className={className}>

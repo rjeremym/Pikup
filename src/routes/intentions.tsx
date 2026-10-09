@@ -6,5 +6,5 @@ export const Route = createFileRoute("/intentions")({
 });
 
 function IntentionsLayout() {
-  return <SectionLayout sectionId="intentions" />;
+  return <SectionLayout />;
 }

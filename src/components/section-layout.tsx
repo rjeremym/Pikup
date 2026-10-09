@@ -1,100 +1,15 @@
-import { Link, Outlet, useLocation } from "@tanstack/react-router";
-import { ArrowRight, ChevronRight, House } from "lucide-react";
+import { Link, Outlet } from "@tanstack/react-router";
+import { ArrowRight } from "lucide-react";
 import type { ReactNode } from "react";
-import {
-  TONE,
-  sectionById,
-  trailFor,
-  visibleChildren,
-  type Crumb,
-  type NavPage,
-  type SectionId,
-} from "@/lib/nav";
+import { TONE, type NavPage, type SectionId } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 
-/**
- * Wraps every page in a section: breadcrumbs say where you are, notebook-divider tabs show the
- * sibling pages, and the page itself renders below.
- */
-export function SectionLayout({ sectionId }: { sectionId: SectionId }) {
-  const section = sectionById(sectionId);
-  const pathname = useLocation({ select: (l) => l.pathname });
-  const tone = TONE[sectionId];
-  const tabs: NavPage[] = [{ ...section, label: "Overview" }, ...visibleChildren(section)];
-
-  // Main destinations are already in the header; keep secondary account navigation local.
-  if (sectionId !== "account") {
-    return (
-      <div className="mx-auto w-full max-w-5xl px-4 pt-1 pb-20">
-        <Outlet />
-      </div>
-    );
-  }
-
+/** Wraps every page in a section. The main destinations live in the header, so no extra nav here. */
+export function SectionLayout() {
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 pt-5 pb-20">
-      <Breadcrumbs trail={trailFor(pathname)} />
-
-      <nav
-        aria-label={`${section.label} pages`}
-        className="mt-4 flex flex-wrap items-end gap-1 border-b-2 border-pencil/50"
-      >
-        {tabs.map((page) => (
-          <Link
-            key={page.to}
-            to={page.to}
-            activeOptions={{ exact: page.to === section.to }}
-            className={cn(
-              "font-hand -mb-[2px] inline-flex items-center gap-1.5 rounded-t-xl border-2 border-transparent bg-muted/80 bg-clip-padding px-2.5 py-1.5 text-base text-muted-foreground transition-colors hover:text-foreground sm:px-4 sm:text-lg",
-              "data-[status=active]:border-pencil/50 data-[status=active]:border-b-background data-[status=active]:bg-background data-[status=active]:text-foreground",
-              tone.tabActive,
-            )}
-          >
-            <page.icon className="hidden h-4 w-4 sm:block" aria-hidden />
-            {page.short ? (
-              <>
-                <span className="sm:hidden">{page.short}</span>
-                <span className="hidden sm:inline">{page.label}</span>
-              </>
-            ) : (
-              page.label
-            )}
-          </Link>
-        ))}
-      </nav>
-
+    <div className="mx-auto w-full max-w-5xl px-4 pt-1 pb-20">
       <Outlet />
     </div>
-  );
-}
-
-function Breadcrumbs({ trail }: { trail: Crumb[] }) {
-  return (
-    <nav aria-label="Breadcrumb">
-      <ol className="flex flex-wrap items-center gap-1 text-sm text-muted-foreground">
-        {trail.map((crumb, i) => {
-          const last = i === trail.length - 1;
-          return (
-            <li key={crumb.to} className="flex items-center gap-1">
-              {i > 0 && <ChevronRight className="h-3.5 w-3.5 opacity-60" aria-hidden />}
-              {last ? (
-                <span aria-current="page" className="font-semibold text-foreground">
-                  {crumb.label}
-                </span>
-              ) : (
-                <Link
-                  to={crumb.to}
-                  className="inline-flex items-center gap-1 underline decoration-dotted underline-offset-4 hover:text-foreground"
-                >
-                  {i === 0 && <House className="h-3.5 w-3.5" aria-hidden />}
-                  {crumb.label}
-                </Link>
-              )}
-            </li>
-          );
-        })}
-      </ol>
-    </nav>
   );
 }
 

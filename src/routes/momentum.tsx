@@ -6,5 +6,5 @@ export const Route = createFileRoute("/momentum")({
 });
 
 function MomentumLayout() {
-  return <SectionLayout sectionId="momentum" />;
+  return <SectionLayout />;
 }

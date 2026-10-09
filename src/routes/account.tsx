@@ -6,5 +6,5 @@ export const Route = createFileRoute("/account")({
 });
 
 function AccountLayout() {
-  return <SectionLayout sectionId="account" />;
+  return <SectionLayout />;
 }

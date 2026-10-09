@@ -1,8 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { UserPlus } from "lucide-react";
-import { PageHeader } from "@/components/section-layout";
-import { Checklist, PasswordField, PrototypeNotice, TextField } from "@/components/form-bits";
+import { toast } from "sonner";
+import { AuthCard, Checklist, PasswordField, TextField } from "@/components/form-bits";
 import { EMAIL_PATTERN, createAccount, passwordChecks } from "@/lib/account";
 
 export const Route = createFileRoute("/account/create")({
@@ -43,68 +43,62 @@ function CreateAccountPage() {
     setSubmitted(true);
     if (Object.values(errors).some(Boolean)) return;
     createAccount({ name: name.trim(), email: email.trim() });
-    navigate({ to: "/account" });
+    toast.success("Account created. Your data is saved to your account.");
+    // happy path: back to the summary, where setting goals is the next step
+    navigate({ to: "/momentum/stats" });
   };
 
   return (
-    <>
-      <PageHeader
-        title="Create account"
-        lead="Takes about thirty seconds. Everything you've already saved comes with you."
-      />
-      <div className="max-w-md">
-        <form
-          noValidate
-          onSubmit={submit}
-          className="paper-card relative space-y-5 px-6 pt-10 pb-6"
-        >
-          <div className="washi absolute -top-3 left-8 h-7 w-24 -rotate-3" />
-          <TextField
-            label="Name"
-            autoComplete="name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            error={show(errors.name)}
-          />
-          <TextField
-            label="Email"
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            error={show(errors.email)}
-          />
-          <PasswordField
-            label="Password"
-            autoComplete="new-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            error={show(errors.password)}
-          />
-          <PasswordField
-            label="Confirm password"
-            autoComplete="new-password"
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-            error={show(errors.confirm)}
-          />
-          <Checklist items={checks} />
-          <button type="submit" className="sketch-btn-primary w-full">
-            <UserPlus className="h-5 w-5" aria-hidden /> Create account
-          </button>
-        </form>
-
-        <p className="mt-6 text-center text-sm text-muted-foreground">
-          Already have one?{" "}
+    <AuthCard
+      title="Create account"
+      lead="Takes about thirty seconds. Everything you've already saved comes with you."
+      footer={
+        <>
+          Already have an account?{" "}
           <Link
             to="/account/sign-in"
             className="font-semibold text-foreground underline decoration-dotted underline-offset-4"
           >
-            Sign in
+            Log in
           </Link>
-        </p>
-        <PrototypeNotice className="mt-8" />
-      </div>
-    </>
+        </>
+      }
+    >
+      <form noValidate onSubmit={submit} className="space-y-5">
+        <TextField
+          label="Name"
+          autoComplete="name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          error={show(errors.name)}
+        />
+        <TextField
+          label="Email"
+          type="email"
+          autoComplete="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          error={show(errors.email)}
+        />
+        <PasswordField
+          label="Password"
+          autoComplete="new-password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          error={show(errors.password)}
+        />
+        <PasswordField
+          label="Confirm password"
+          autoComplete="new-password"
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value)}
+          error={show(errors.confirm)}
+        />
+        <Checklist items={checks} />
+        <button type="submit" className="sketch-btn-primary w-full">
+          <UserPlus className="h-5 w-5" aria-hidden /> Create account
+        </button>
+      </form>
+    </AuthCard>
   );
 }
