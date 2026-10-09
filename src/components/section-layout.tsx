@@ -1,8 +1,32 @@
 import { Link, Outlet } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import type { ReactNode } from "react";
-import { TONE, type NavPage, type SectionId } from "@/lib/nav";
+import { TONE, type AppPath, type NavPage, type SectionId } from "@/lib/nav";
 import { cn } from "@/lib/utils";
+
+/** The happy path's big "do this next" button, sized like the home page's Start a session. */
+export const HERO_BUTTON = "sketch-btn-primary max-w-full px-6 py-3 text-2xl sm:px-8 sm:text-3xl";
+
+/**
+ * Guides the happy path (summary → goals → backlog → summary). It stays a quiet button until the
+ * page's own job is done, then becomes the big primary button so the next step is obvious.
+ */
+export function NextStepLink({
+  to,
+  emphasized,
+  children,
+}: {
+  to: AppPath;
+  emphasized: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <Link to={to} className={emphasized ? HERO_BUTTON : "sketch-btn"}>
+      {children}
+      <ArrowRight className={emphasized ? "h-6 w-6" : "h-5 w-5"} aria-hidden />
+    </Link>
+  );
+}
 
 /** Wraps every page in a section. The main destinations live in the header, so no extra nav here. */
 export function SectionLayout() {

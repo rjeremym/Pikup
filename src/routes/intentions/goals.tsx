@@ -3,7 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { ArrowRight, CalendarClock, Minus, Plus, Trash2, Undo2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
-import { Meter, PageHeader } from "@/components/section-layout";
+import { Meter, NextStepLink, PageHeader } from "@/components/section-layout";
 import { Notice } from "@/components/form-bits";
 import {
   getGoals,
@@ -44,6 +44,8 @@ function GoalsPage() {
   const [title, setTitle] = useState("");
   const [due, setDue] = useState("");
   const [removed, setRemoved] = useState<{ goal: Goal; index: number } | null>(null);
+  /** goals added on this visit; the first one unlocks the happy path's next step */
+  const [added, setAdded] = useState<string[]>([]);
 
   useEffect(() => {
     const sessions = sessionsThisWeek();
@@ -72,6 +74,7 @@ function GoalsPage() {
     setTitle("");
     setDue("");
     setRemoved(null);
+    setAdded([...added, t]);
   };
 
   const toggle = (id: string) =>
@@ -102,10 +105,114 @@ function GoalsPage() {
     <>
       <PageHeader
         title="Goals"
-        lead="One number for the week, and a few bigger milestones for the project."
-      />
+        lead="A few bigger milestones for the project, and one number for the week."
+      >
+        <NextStepLink to="/intentions/backlog" emphasized={added.length > 0}>
+          Build your backlog
+        </NextStepLink>
+      </PageHeader>
 
-      <div className="grid gap-8 lg:grid-cols-[22rem_1fr]">
+      <div className="grid gap-8 lg:grid-cols-[1fr_22rem]">
+        <section aria-labelledby="project-heading" className="paper-card relative px-6 pt-10 pb-6">
+          <div className="washi absolute -top-3 right-10 h-7 w-24 rotate-2" />
+          <h2 id="project-heading" className="hand text-3xl">
+            Project goals
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Big milestones. When one feels too big to start, break it into{" "}
+            <Link
+              to="/intentions/backlog"
+              className="underline decoration-dotted underline-offset-4 hover:text-foreground"
+            >
+              backlog items
+            </Link>
+            .
+          </p>
+
+          <form onSubmit={add} className="mt-5 flex flex-wrap items-end gap-3">
+            <div className="min-w-[12rem] flex-1">
+              <label htmlFor="goal-title" className="sr-only">
+                New goal
+              </label>
+              <input
+                id="goal-title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g. Ship the MVP"
+                maxLength={80}
+                className="sketch-input"
+              />
+            </div>
+            <div>
+              <label htmlFor="goal-due" className="block text-xs text-muted-foreground">
+                Target date (optional)
+              </label>
+              <input
+                id="goal-due"
+                type="date"
+                value={due}
+                onChange={(e) => setDue(e.target.value)}
+                className="sketch-input w-auto py-2"
+              />
+            </div>
+            <button type="submit" disabled={!title.trim()} className="sketch-btn-primary text-xl">
+              <Plus className="h-5 w-5" aria-hidden /> Add goal
+            </button>
+          </form>
+
+          {added.length > 0 && !removed && (
+            <Notice tone="success" className="mt-4">
+              Added “{added[added.length - 1]}”. Add as many as you like, then break them into
+              backlog items.
+            </Notice>
+          )}
+
+          {removed && (
+            <Notice className="mt-4">
+              Removed “{removed.goal.title}”.{" "}
+              <button
+                type="button"
+                onClick={undo}
+                className="inline-flex items-center gap-1 font-semibold text-foreground underline decoration-dotted underline-offset-2"
+              >
+                <Undo2 className="h-3.5 w-3.5" aria-hidden /> Undo
+              </button>
+            </Notice>
+          )}
+
+          {goals && (
+            <>
+              <h3 className="mt-6 text-sm font-semibold text-muted-foreground">
+                In progress ({open.length})
+              </h3>
+              {open.length ? (
+                <ul className="mt-2 space-y-2">
+                  {open.map((g) => (
+                    <GoalRow key={g.id} goal={g} onToggle={toggle} onRemove={remove} />
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-2 text-sm text-muted-foreground italic">
+                  No open goals. What would make this project feel finished?
+                </p>
+              )}
+
+              {achieved.length > 0 && (
+                <details className="mt-6">
+                  <summary className="cursor-pointer text-sm font-semibold text-muted-foreground hover:text-foreground">
+                    Achieved ({achieved.length})
+                  </summary>
+                  <ul className="mt-2 space-y-2">
+                    {achieved.map((g) => (
+                      <GoalRow key={g.id} goal={g} onToggle={toggle} onRemove={remove} />
+                    ))}
+                  </ul>
+                </details>
+              )}
+            </>
+          )}
+        </section>
+
         <section
           aria-labelledby="weekly-heading"
           className="paper-card relative self-start px-6 pt-10 pb-6"
@@ -166,99 +273,6 @@ function GoalsPage() {
           <Link to="/momentum/stats" className="sketch-link mt-3 text-base">
             see weekly stats <ArrowRight className="h-4 w-4" aria-hidden />
           </Link>
-        </section>
-
-        <section aria-labelledby="project-heading" className="paper-card relative px-6 pt-10 pb-6">
-          <div className="washi absolute -top-3 right-10 h-7 w-24 rotate-2" />
-          <h2 id="project-heading" className="hand text-3xl">
-            Project goals
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Big milestones. When one feels too big to start, break it into{" "}
-            <Link
-              to="/intentions/backlog"
-              className="underline decoration-dotted underline-offset-4 hover:text-foreground"
-            >
-              backlog items
-            </Link>
-            .
-          </p>
-
-          <form onSubmit={add} className="mt-5 flex flex-wrap items-end gap-3">
-            <div className="min-w-[12rem] flex-1">
-              <label htmlFor="goal-title" className="sr-only">
-                New goal
-              </label>
-              <input
-                id="goal-title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g. Ship the MVP"
-                maxLength={80}
-                className="sketch-input"
-              />
-            </div>
-            <div>
-              <label htmlFor="goal-due" className="block text-xs text-muted-foreground">
-                Target date (optional)
-              </label>
-              <input
-                id="goal-due"
-                type="date"
-                value={due}
-                onChange={(e) => setDue(e.target.value)}
-                className="sketch-input w-auto py-2"
-              />
-            </div>
-            <button type="submit" disabled={!title.trim()} className="sketch-btn-primary text-xl">
-              <Plus className="h-5 w-5" aria-hidden /> Add goal
-            </button>
-          </form>
-
-          {removed && (
-            <Notice className="mt-4">
-              Removed “{removed.goal.title}”.{" "}
-              <button
-                type="button"
-                onClick={undo}
-                className="inline-flex items-center gap-1 font-semibold text-foreground underline decoration-dotted underline-offset-2"
-              >
-                <Undo2 className="h-3.5 w-3.5" aria-hidden /> Undo
-              </button>
-            </Notice>
-          )}
-
-          {goals && (
-            <>
-              <h3 className="mt-6 text-sm font-semibold text-muted-foreground">
-                In progress ({open.length})
-              </h3>
-              {open.length ? (
-                <ul className="mt-2 space-y-2">
-                  {open.map((g) => (
-                    <GoalRow key={g.id} goal={g} onToggle={toggle} onRemove={remove} />
-                  ))}
-                </ul>
-              ) : (
-                <p className="mt-2 text-sm text-muted-foreground italic">
-                  No open goals. What would make this project feel finished?
-                </p>
-              )}
-
-              {achieved.length > 0 && (
-                <details className="mt-6">
-                  <summary className="cursor-pointer text-sm font-semibold text-muted-foreground hover:text-foreground">
-                    Achieved ({achieved.length})
-                  </summary>
-                  <ul className="mt-2 space-y-2">
-                    {achieved.map((g) => (
-                      <GoalRow key={g.id} goal={g} onToggle={toggle} onRemove={remove} />
-                    ))}
-                  </ul>
-                </details>
-              )}
-            </>
-          )}
         </section>
       </div>
     </>
