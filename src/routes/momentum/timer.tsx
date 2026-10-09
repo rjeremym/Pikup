@@ -1,21 +1,20 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Pause, Play, Square, CalendarDays, Eye, EyeOff, NotebookPen } from "lucide-react";
+import { Pause, Play, Square, Eye, EyeOff, NotebookPen } from "lucide-react";
 import {
-  useTimer,
   fmtDuration,
   lastNote,
   getPlacedSticker,
-  setPendingSession,
   workedOnLabel,
   type Session,
 } from "@/lib/tracker";
+import { useSessionControls, useSessionRevision } from "@/lib/session-context";
 import { STICKER_IMAGES } from "@/lib/stickers";
 
 export const Route = createFileRoute("/momentum/timer")({
   head: () => ({
     meta: [
-      { title: "Timer — Pikup" },
+      { title: "Session — Pikup" },
       {
         name: "description",
         content:
@@ -35,8 +34,8 @@ export const Route = createFileRoute("/momentum/timer")({
 });
 
 function TimerPage() {
-  const timer = useTimer();
-  const navigate = useNavigate();
+  const { timer, pending, ready, startSession, endSession, finishNote } = useSessionControls();
+  const revision = useSessionRevision();
   const [note, setNote] = useState<Session | undefined>();
   const [sticker, setSticker] = useState<string | null>(null);
   const [timerHidden, setTimerHidden] = useState(false);
@@ -44,30 +43,26 @@ function TimerPage() {
   useEffect(() => {
     setNote(lastNote());
     setSticker(getPlacedSticker());
-  }, []);
+  }, [revision]);
 
   // Reveal clock again when the session ends
   useEffect(() => {
     if (!timer.running) setTimerHidden(false);
   }, [timer.running]);
 
-  const endSession = () => {
-    const result = timer.stop();
-    if (!result) return;
-    setPendingSession(result);
-    timer.reset();
-    navigate({ to: "/momentum/timer/wrap-up" });
-  };
-
   const hasNote = Boolean(note && (note.workedOn || note.nextThing));
 
   return (
     <main className="flex flex-col items-center pt-8">
-      <header className="mb-10 text-center">
-        <h1 className="sr-only">Timer</h1>
-        <p className="text-sm text-muted-foreground">
-          Start your timer and pick up exactly where you left off.
-        </p>
+      <header className="mb-8 flex w-full items-center justify-between gap-4">
+        <div>
+          <h1 className="hand text-4xl">Session</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Pick up exactly where you left off.</p>
+        </div>
+        <Link to="/intentions/notes" className="sketch-link whitespace-nowrap">
+          <NotebookPen className="h-4 w-4" aria-hidden />
+          Past notes
+        </Link>
       </header>
 
       <div className="relative w-full max-w-xl">
@@ -107,7 +102,7 @@ function TimerPage() {
             ) : (
               <div className="mt-3 space-y-2 opacity-60">
                 <p className="text-base italic text-muted-foreground sm:text-lg">
-                  Nothing here yet…
+                  No note from your last session.
                 </p>
                 <p className="text-sm text-muted-foreground">
                   End a session and leave a short note — next time you'll know exactly where to pick
@@ -157,13 +152,14 @@ function TimerPage() {
             )}
           </div>
 
-          <div className="mt-8 flex items-center justify-center gap-3">
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             {!timer.running ? (
               <button
-                onClick={timer.start}
-                className="hand inline-flex items-center gap-2 rounded-2xl border-2 border-primary bg-primary px-10 py-3 text-3xl text-primary-foreground shadow-[3px_4px_0_oklch(0.35_0.05_50/0.5)] transition-transform hover:-translate-y-0.5 active:translate-y-0 active:shadow-none"
+                onClick={pending ? finishNote : startSession}
+                disabled={!ready}
+                className="hand inline-flex items-center gap-2 rounded-2xl border-2 border-primary bg-primary px-5 py-3 text-2xl sm:px-10 sm:text-3xl text-primary-foreground shadow-[3px_4px_0_oklch(0.35_0.05_50/0.5)] transition-transform hover:-translate-y-0.5 active:translate-y-0 active:shadow-none"
               >
-                <Play className="h-6 w-6" /> Start
+                <Play className="h-6 w-6" aria-hidden /> {pending ? "Finish note" : "Start session"}
               </button>
             ) : (
               <>
@@ -185,24 +181,6 @@ function TimerPage() {
           </div>
         </div>
       </div>
-
-      {/* Hidden mid-session so nothing competes with the work */}
-      {!timer.running && (
-        <div className="mt-8 flex flex-wrap justify-center gap-x-8 gap-y-2">
-          <Link
-            to="/momentum/stats"
-            className="hand inline-flex items-center gap-2 text-xl text-muted-foreground underline decoration-dotted underline-offset-4 hover:text-foreground"
-          >
-            <CalendarDays className="h-4 w-4" /> Weekly stats
-          </Link>
-          <Link
-            to="/intentions/notes"
-            className="hand inline-flex items-center gap-2 text-xl text-muted-foreground underline decoration-dotted underline-offset-4 hover:text-foreground"
-          >
-            <NotebookPen className="h-4 w-4" /> Past notes
-          </Link>
-        </div>
-      )}
     </main>
   );
 }

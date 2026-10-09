@@ -52,8 +52,8 @@ export const SECTIONS: NavSection[] = [
     children: [
       {
         to: "/momentum/timer",
-        label: "Timer",
-        blurb: "Read last session's note, then start the clock.",
+        label: "Session",
+        blurb: "Your focus timer and the note that helps you pick up where you left off.",
         icon: Timer,
         children: [
           {
@@ -67,9 +67,9 @@ export const SECTIONS: NavSection[] = [
       },
       {
         to: "/momentum/stats",
-        label: "Weekly stats",
-        short: "Stats",
-        blurb: "Hours, streaks and milestone stickers.",
+        label: "Weekly summary",
+        short: "Summary",
+        blurb: "Deep-work hours, task completion, streaks and milestone stickers.",
         icon: ChartColumn,
       },
     ],
@@ -97,7 +97,7 @@ export const SECTIONS: NavSection[] = [
       {
         to: "/intentions/notes",
         label: "Notes",
-        blurb: "Every note you've left yourself — search by topic or date.",
+        blurb: "Revisit your session notes and next steps — search by topic or date.",
         icon: NotebookPen,
       },
     ],
@@ -199,4 +199,17 @@ export function trailFor(pathname: string): Crumb[] {
     trail.push({ label: hit.label, to: hit.to });
     level = hit.children ?? [];
   }
+}
+
+/** Planning, sessions, and progress are visible directly in the global navbar. */
+export const PRIMARY_NAV = [
+  findPage("/intentions/goals"),
+  findPage("/intentions/backlog"),
+  findPage("/momentum/timer"),
+  findPage("/intentions/notes"),
+  findPage("/momentum/stats"),
+];
+
+export function primaryPathFor(pathname: string): AppPath | undefined {
+  return PRIMARY_NAV.find((page) => isWithin(pathname, page.to))?.to;
 }

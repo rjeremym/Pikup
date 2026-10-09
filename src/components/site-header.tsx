@@ -1,18 +1,10 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import * as NavigationMenu from "@radix-ui/react-navigation-menu";
-import { ChevronDown, House, LogOut, Menu } from "lucide-react";
-import { useState, type ReactNode } from "react";
-import {
-  SECTIONS,
-  TONE,
-  isWithin,
-  sectionById,
-  visibleChildren,
-  type NavPage,
-  type NavSection,
-} from "@/lib/nav";
+import { Menu, Pause, Play, Square, UserRound, LogOut, NotebookPen } from "lucide-react";
+import { useState } from "react";
+import { PRIMARY_NAV, findPage, primaryPathFor, type NavPage } from "@/lib/nav";
 import { signOut, useAccount } from "@/lib/account";
-import { fmtDuration, useTimer } from "@/lib/tracker";
+import { fmtDuration } from "@/lib/tracker";
+import { useSessionControls } from "@/lib/session-context";
 import {
   Sheet,
   SheetContent,
@@ -20,9 +12,14 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
-/** Icon + label + one-line description; the same row is used in every menu so links read alike. */
 export function PageLinkContent({ page }: { page: NavPage }) {
   return (
     <>
@@ -36,156 +33,164 @@ export function PageLinkContent({ page }: { page: NavPage }) {
 }
 
 export function SiteHeader() {
-  const pathname = useLocation({ select: (l) => l.pathname });
-  const contentSections = SECTIONS.filter((s) => s.id !== "account");
-
+  const pathname = useLocation({ select: (location) => location.pathname });
+  const active = primaryPathFor(pathname);
   return (
-    <header className="sticky top-0 z-40 border-b-2 border-dashed border-pencil/40 bg-background/90 backdrop-blur-sm">
-      <div className="mx-auto flex h-16 max-w-5xl items-center gap-2 px-4">
-        <Link to="/" className="hand mr-2 text-3xl text-primary sm:mr-4" aria-label="Pikup — home">
-          Pikup
+    <header className="sticky top-0 z-40 border-b border-dashed border-pencil/40 bg-background/95 backdrop-blur-sm">
+      <div className="mx-auto flex h-16 max-w-5xl flex-nowrap items-center gap-2 px-3 min-[820px]:gap-4 min-[820px]:px-4">
+        <Link
+          to="/"
+          className="inline-flex h-10 shrink-0 items-center text-primary"
+          aria-label="Pikup — home"
+        >
+          {/* This font's letters sit below the center of its line box. */}
+          <span className="hand -translate-y-1 text-3xl leading-none">Pikup</span>
         </Link>
-
-        <NavigationMenu.Root aria-label="Main" className="hidden md:block">
-          <NavigationMenu.List className="flex items-center gap-1">
-            {contentSections.map((s) => (
-              <SectionMenu key={s.id} section={s} pathname={pathname} />
-            ))}
-          </NavigationMenu.List>
-        </NavigationMenu.Root>
-
-        <div className="ml-auto flex items-center gap-2">
-          <SessionPill pathname={pathname} />
-          <AccountMenu pathname={pathname} />
-          <MobileMenu pathname={pathname} />
+        <nav
+          aria-label="Main navigation"
+          className="hidden h-full items-center gap-2 sm:flex min-[820px]:gap-3"
+        >
+          {PRIMARY_NAV.map((page, index) => (
+            <Link
+              key={page.to}
+              to={page.to}
+              aria-label={page.label}
+              aria-current={active === page.to ? "page" : undefined}
+              className={cn(
+                "relative inline-flex h-full shrink-0 items-center gap-1.5 whitespace-nowrap text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground",
+                (index === 2 || index === 4) && "ml-1 min-[820px]:ml-2",
+                active === page.to &&
+                  "text-primary after:absolute after:inset-x-0 after:bottom-2 after:h-0.5 after:rounded-full after:bg-primary",
+              )}
+            >
+              <page.icon className="hidden h-4 w-4 shrink-0 lg:block" aria-hidden />
+              {page.short ?? page.label}
+            </Link>
+          ))}
+        </nav>
+        <div className="ml-auto flex shrink-0 items-center gap-1.5 min-[820px]:gap-2">
+          <SessionControls />
+          <AccountMenu />
+          <MobileMenu active={active} />
         </div>
       </div>
     </header>
   );
 }
 
-/** A section trigger that drops down its overview + child pages. */
-function SectionMenu({
-  section,
-  pathname,
-  trigger,
-  align = "left",
-  footer,
-}: {
-  section: NavSection;
-  pathname: string;
-  trigger?: ReactNode;
-  align?: "left" | "right";
-  footer?: ReactNode;
-}) {
-  const tone = TONE[section.id];
-  const here = isWithin(pathname, section.to);
-
+function SessionControls() {
+  const { timer, pending, ready, startSession, endSession, finishNote } = useSessionControls();
+  const action = pending ? finishNote : timer.running ? endSession : startSession;
+  const label = pending
+    ? "Finish your session note"
+    : timer.running
+      ? "End session and leave a note"
+      : "Start session";
+  const Icon = pending ? NotebookPen : timer.running ? Square : Play;
   return (
-    <NavigationMenu.Item className="relative">
-      <NavigationMenu.Trigger
-        className={cn(
-          "group hand relative inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xl text-foreground/75 transition-colors hover:bg-muted hover:text-foreground data-[state=open]:bg-muted",
-          here && "text-foreground",
-        )}
-      >
-        {trigger ?? (
-          <>
-            <span className={cn("h-2.5 w-2.5 rounded-full", tone.dot)} aria-hidden />
-            {section.label}
-          </>
-        )}
-        {here && <span className="sr-only">(current section)</span>}
-        <ChevronDown
-          className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180"
-          aria-hidden
-        />
-        {/* "you are here" mark under the section we're in */}
-        {here && (
+    <div
+      className="flex shrink-0 items-center gap-1.5 min-[820px]:gap-2"
+      aria-label="Session controls"
+    >
+      {timer.running && (
+        <>
           <span
-            className={cn("absolute inset-x-3 -bottom-1 h-1 rounded-full", tone.bar)}
-            aria-hidden
-          />
-        )}
-      </NavigationMenu.Trigger>
-
-      <NavigationMenu.Content
-        className={cn("absolute top-full mt-3 w-80", align === "right" ? "right-0" : "left-0")}
+            className="hidden items-center gap-1.5 whitespace-nowrap text-xs font-semibold tabular-nums min-[960px]:inline-flex"
+            aria-live="off"
+          >
+            <span
+              className={cn(
+                "h-1.5 w-1.5 rounded-full",
+                timer.paused ? "bg-pencil" : "bg-accent-foreground",
+              )}
+              aria-hidden
+            />
+            {timer.paused && <span>Paused</span>}
+            {fmtDuration(timer.elapsed)}
+          </span>
+          <button
+            type="button"
+            onClick={timer.togglePause}
+            aria-label={timer.paused ? "Resume session" : "Pause session"}
+            className="inline-flex min-h-10 min-w-10 items-center justify-center gap-1 rounded-xl border border-pencil/40 bg-card px-1.5 text-xs tabular-nums transition-colors hover:bg-muted"
+          >
+            {timer.paused ? (
+              <Play className="h-3.5 w-3.5" aria-hidden />
+            ) : (
+              <Pause className="h-3.5 w-3.5" aria-hidden />
+            )}
+            <span className="min-[960px]:hidden">
+              {timer.paused ? "Paused" : fmtDuration(timer.elapsed)}
+            </span>
+          </button>
+        </>
+      )}
+      <button
+        type="button"
+        disabled={!ready}
+        onClick={action}
+        aria-label={label}
+        className="inline-flex min-h-10 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-primary bg-primary px-2.5 text-xs font-extrabold text-primary-foreground shadow-[2px_3px_0_oklch(0.35_0.05_50/0.3)] transition-transform hover:-translate-y-0.5 active:translate-y-0 active:shadow-none disabled:opacity-60 min-[820px]:px-3 min-[960px]:text-sm"
       >
-        <div className="paper-card p-2">
-          <NavigationMenu.Link asChild active={pathname === section.to}>
-            <Link to={section.to} className="block rounded-xl px-3 py-2 hover:bg-muted">
-              <span className={cn("hand text-2xl", tone.text)}>{section.label}</span>
-              <span className="ml-2 text-sm text-muted-foreground">overview →</span>
-              <span className="block text-sm text-muted-foreground">{section.blurb}</span>
-            </Link>
-          </NavigationMenu.Link>
-          <ul className="mx-3 mt-1 mb-1 border-t-2 border-dashed border-pencil/30 pt-1">
-            {visibleChildren(section).map((page) => (
-              <li key={page.to}>
-                <NavigationMenu.Link asChild active={isWithin(pathname, page.to)}>
-                  <Link
-                    to={page.to}
-                    className="-mx-3 flex gap-3 rounded-xl px-3 py-2 hover:bg-muted data-[active]:bg-muted"
-                  >
-                    <PageLinkContent page={page} />
-                  </Link>
-                </NavigationMenu.Link>
-              </li>
-            ))}
-          </ul>
-          {footer}
-        </div>
-      </NavigationMenu.Content>
-    </NavigationMenu.Item>
+        <Icon className="h-4 w-4" aria-hidden />
+        <span className="hidden min-[380px]:inline">
+          {pending ? (
+            "Finish note"
+          ) : timer.running ? (
+            <>
+              <span className="hidden md:inline">End & leave note</span>
+              <span className="md:hidden">End & note</span>
+            </>
+          ) : (
+            "Start session"
+          )}
+        </span>
+        <span className="min-[380px]:hidden">
+          {pending ? "Note" : timer.running ? "End" : "Start"}
+        </span>
+      </button>
+    </div>
   );
 }
 
-function AccountMenu({ pathname }: { pathname: string }) {
+function AccountMenu() {
   const account = useAccount();
-  const section = sectionById("account");
-
   return (
-    <NavigationMenu.Root aria-label="Account" className="hidden md:block">
-      <NavigationMenu.List>
-        <SectionMenu
-          section={section}
-          pathname={pathname}
-          align="right"
-          trigger={
-            account ? (
-              <>
-                <Avatar name={account.name} />
-                <span className="max-w-[8rem] truncate">{account.name.split(" ")[0]}</span>
-              </>
-            ) : (
-              <>
-                <span className={cn("h-2.5 w-2.5 rounded-full", TONE.account.dot)} aria-hidden />
-                Account
-              </>
-            )
-          }
-          footer={
-            <p className="mx-3 border-t-2 border-dashed border-pencil/30 pt-2 pb-1 text-xs text-muted-foreground">
-              {account ? (
-                <>
-                  Signed in as {account.email}.{" "}
-                  <button
-                    type="button"
-                    onClick={signOut}
-                    className="inline-flex items-center gap-1 font-semibold text-foreground underline decoration-dotted underline-offset-2"
-                  >
-                    <LogOut className="h-3 w-3" aria-hidden /> Sign out
-                  </button>
-                </>
-              ) : (
-                "Not signed in — your sessions are saved in this browser only."
-              )}
-            </p>
-          }
-        />
-      </NavigationMenu.List>
-    </NavigationMenu.Root>
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-full border border-pencil/40 bg-card sm:inline-flex"
+        aria-label="Account"
+      >
+        {account ? <Avatar name={account.name} /> : <UserRound className="h-4 w-4" aria-hidden />}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="paper-card w-64 p-2">
+        {account && <p className="px-2 py-2 text-sm font-semibold">{account.name}</p>}
+        <DropdownMenuItem asChild>
+          <Link to="/account">Account</Link>
+        </DropdownMenuItem>
+        {!account && (
+          <>
+            <DropdownMenuItem asChild>
+              <Link to="/account/sign-in">Sign in</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link to="/account/create">Create account</Link>
+            </DropdownMenuItem>
+          </>
+        )}
+        {account && (
+          <>
+            <DropdownMenuItem asChild>
+              <Link to="/account/password">Change password</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={signOut}>
+              <LogOut className="mr-2 h-4 w-4" aria-hidden />
+              Sign out
+            </DropdownMenuItem>
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -193,7 +198,7 @@ export function Avatar({ name, className }: { name: string; className?: string }
   return (
     <span
       className={cn(
-        "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-pencil bg-washi font-body text-sm font-extrabold text-foreground",
+        "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-pencil bg-washi text-sm font-extrabold text-foreground",
         className,
       )}
       aria-hidden
@@ -203,100 +208,80 @@ export function Avatar({ name, className }: { name: string; className?: string }
   );
 }
 
-/** Visible anywhere except the timer itself, so a running session is never forgotten. */
-function SessionPill({ pathname }: { pathname: string }) {
-  const timer = useTimer();
-  if (!timer.running || isWithin(pathname, "/momentum/timer")) return null;
-
-  return (
-    <Link
-      to="/momentum/timer"
-      className="inline-flex items-center gap-2 rounded-full border-2 border-primary/60 bg-card px-3 py-1 text-sm font-semibold tabular-nums transition-transform hover:-translate-y-0.5"
-    >
-      <span
-        className={cn("h-2 w-2 rounded-full bg-primary", !timer.paused && "animate-pulse")}
-        aria-hidden
-      />
-      {timer.paused ? "Paused" : fmtDuration(timer.elapsed)}
-      <span className="sr-only">— session running, back to the timer</span>
-    </Link>
-  );
-}
-
-/** Phones get the whole tree at once: sections with their pages indented beneath. */
-function MobileMenu({ pathname }: { pathname: string }) {
+function MobileMenu({ active }: { active: string | undefined }) {
   const [open, setOpen] = useState(false);
   const account = useAccount();
   const close = () => setOpen(false);
-  const linkClass =
-    "flex gap-3 rounded-xl px-3 py-2 hover:bg-muted data-[status=active]:bg-muted data-[status=active]:font-semibold";
-
+  const secondary = [findPage("/account")];
+  const linkClass = "flex min-h-11 items-center gap-3 rounded-xl px-3 py-2 hover:bg-muted";
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger
-        className="inline-flex h-10 w-10 items-center justify-center rounded-xl border-2 border-pencil/60 bg-card md:hidden"
-        aria-label="Open menu"
+        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-pencil/40 bg-card sm:hidden"
+        aria-label="Open navigation"
       >
-        <Menu className="h-5 w-5" />
+        <Menu className="h-5 w-5" aria-hidden />
       </SheetTrigger>
       <SheetContent
         side="right"
-        className="w-[85%] max-w-sm overflow-y-auto border-l-2 border-pencil bg-background"
+        className="w-[85%] max-w-sm overflow-y-auto border-l border-pencil bg-background"
       >
         <SheetTitle className="hand text-3xl font-normal text-primary">Pikup</SheetTitle>
         <SheetDescription>
           {account ? `Signed in as ${account.name}.` : "Where to next?"}
         </SheetDescription>
-
-        <nav aria-label="Main" className="mt-6 space-y-5">
-          <Link
-            to="/"
-            onClick={close}
-            activeOptions={{ exact: true }}
-            className={cn(linkClass, "hand text-2xl")}
-          >
-            <House className="mt-1 h-5 w-5 text-pencil" aria-hidden /> Home
-          </Link>
-          {SECTIONS.map((section) => {
-            const tone = TONE[section.id];
-            return (
-              <div key={section.id}>
-                <Link
-                  to={section.to}
-                  onClick={close}
-                  activeOptions={{ exact: true }}
-                  className={cn(linkClass, "hand items-center text-2xl", tone.text)}
-                >
-                  <span className={cn("h-3 w-3 rounded-full", tone.dot)} aria-hidden />
-                  {section.label}
-                  {isWithin(pathname, section.to) && (
-                    <span className="sr-only">(current section)</span>
-                  )}
-                </Link>
-                <ul className="mt-1 ml-4 border-l-2 border-dashed border-pencil/40 pl-2">
-                  {visibleChildren(section).map((page) => (
-                    <li key={page.to}>
-                      <Link to={page.to} onClick={close} className={linkClass}>
-                        <PageLinkContent page={page} />
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            );
-          })}
-          {account && (
-            <button
-              type="button"
-              onClick={() => {
-                signOut();
-                close();
-              }}
-              className="sketch-link"
+        <nav aria-label="Mobile navigation" className="mt-6 space-y-2">
+          {PRIMARY_NAV.map((page, index) => (
+            <Link
+              key={page.to}
+              to={page.to}
+              onClick={close}
+              aria-current={active === page.to ? "page" : undefined}
+              className={cn(
+                linkClass,
+                (index === 2 || index === 4) && "mt-4",
+                active === page.to && "bg-muted font-semibold text-primary",
+              )}
             >
-              <LogOut className="h-4 w-4" aria-hidden /> Sign out
-            </button>
-          )}
+              <PageLinkContent page={{ ...page, label: page.short ?? page.label }} />
+            </Link>
+          ))}
+          <div className="space-y-1 border-t border-dashed border-pencil/30 pt-3">
+            {secondary.map((page) => (
+              <Link key={page.to} to={page.to} onClick={close} className={linkClass}>
+                <page.icon className="h-4 w-4" aria-hidden />
+                {page.label}
+              </Link>
+            ))}
+            {!account && (
+              <>
+                <Link to="/account/sign-in" onClick={close} className={linkClass}>
+                  Sign in
+                </Link>
+                <Link to="/account/create" onClick={close} className={linkClass}>
+                  Create account
+                </Link>
+              </>
+            )}
+            {account && (
+              <>
+                <Link to="/account/password" onClick={close} className={linkClass}>
+                  Change password
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    signOut();
+                    close();
+                  }}
+                  className={linkClass}
+                >
+                  <LogOut className="h-4 w-4" aria-hidden />
+                  Sign out
+                </button>
+              </>
+            )}
+          </div>
         </nav>
       </SheetContent>
     </Sheet>

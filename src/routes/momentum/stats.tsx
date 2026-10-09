@@ -1,5 +1,6 @@
+import { useSessionRevision } from "@/lib/session-context";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Lock, Minus, TrendingDown, TrendingUp } from "lucide-react";
 import {
   recentWeeks,
@@ -15,24 +16,26 @@ import {
   placeSticker,
   type DayBucket,
   type WeekBucket,
+  type Session,
 } from "@/lib/tracker";
 import { getWeeklyGoalHours } from "@/lib/intentions";
 import { MILESTONES, STICKER_IMAGES } from "@/lib/stickers";
 import { Meter, PageHeader } from "@/components/section-layout";
 import { cn } from "@/lib/utils";
+import { TaskCompletionSummary, WeeklySessionList } from "@/components/task-completion-summary";
 
 export const Route = createFileRoute("/momentum/stats")({
   head: () => ({
     meta: [
-      { title: "Weekly stats — Pikup" },
+      { title: "Weekly summary — Pikup" },
       {
         name: "description",
-        content: "Your deep-work hours by week — a light sketch of your progress, not a dashboard.",
+        content: "Your deep-work hours and planned-task outcomes, session by session.",
       },
-      { property: "og:title", content: "Weekly stats — Pikup" },
+      { property: "og:title", content: "Weekly summary — Pikup" },
       {
         property: "og:description",
-        content: "Your deep-work hours by week — a light sketch of your progress, not a dashboard.",
+        content: "Your deep-work hours and planned-task outcomes, session by session.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -42,10 +45,21 @@ export const Route = createFileRoute("/momentum/stats")({
 });
 
 function StatsPage() {
+  const revision = useSessionRevision();
+  const [sessionsOpen, setSessionsOpen] = useState(false);
+  const sessionsHeading = useRef<HTMLHeadingElement>(null);
+
+  const viewSessions = () => {
+    setSessionsOpen(true);
+    requestAnimationFrame(() => {
+      sessionsHeading.current?.focus({ preventScroll: true });
+      sessionsHeading.current?.scrollIntoView({ block: "start" });
+    });
+  };
   const [weeks, setWeeks] = useState<WeekBucket[]>([]);
   const [days, setDays] = useState<DayBucket[]>([]);
   const [thisWeek, setThisWeek] = useState(0);
-  const [sessions, setSessions] = useState(0);
+  const [sessions, setSessions] = useState<Session[]>([]);
   const [streak, setStreak] = useState(0);
   const [goalHours, setGoalHours] = useState(6);
   const [unlocked, setUnlocked] = useState<string[]>([]);
@@ -56,7 +70,7 @@ function StatsPage() {
     setWeeks(recentWeeks(6));
     setDays(daysThisWeek());
     setThisWeek(ws);
-    setSessions(sessionsThisWeek().length);
+    setSessions(sessionsThisWeek());
     setStreak(dayStreak());
     setGoalHours(getWeeklyGoalHours());
     // auto-unlock any milestone earned this week
@@ -65,26 +79,34 @@ function StatsPage() {
     });
     setUnlocked(getUnlockedStickers());
     setPlaced(getPlacedSticker());
-  }, []);
+  }, [revision]);
 
   const maxSec = Math.max(...weeks.map((w) => w.seconds), 1);
   const lastWeek = weeks.length >= 2 ? weeks[weeks.length - 2]!.seconds : 0;
 
   return (
     <>
-      <PageHeader title="Weekly stats" lead="A light sketch of your progress, not a dashboard." />
+      <PageHeader title="Weekly summary" lead="Your time and task completion, side by side.">
+        <Link to="/intentions/goals" className="sketch-link">
+          Goals
+        </Link>
+      </PageHeader>
 
       <div className="grid gap-8 lg:grid-cols-2">
-        <section className="paper-card relative px-6 pt-10 pb-6 sm:px-8 lg:col-span-2">
+        <section className="paper-card relative px-6 pt-10 pb-6 sm:px-8">
           <div className="washi absolute -top-3 right-10 h-7 w-24 rotate-3" />
-          <h2 className="hand text-4xl">This week: {fmtHours(thisWeek)} of deep work</h2>
+          <h2 className="hand text-4xl">Deep work hours</h2>
           <WeekDelta thisWeek={thisWeek} lastWeek={lastWeek} />
+          <p className="mt-6 flex items-baseline gap-3">
+            <span className="text-5xl font-extrabold">{fmtHours(thisWeek)}</span>
+            <span className="text-muted-foreground">this week</span>
+          </p>
 
           <dl className="mt-6 grid grid-cols-3 gap-4 border-t-2 border-dashed border-pencil/30 pt-5">
-            <Figure label="Sessions" value={String(sessions)} />
+            <Figure label="Sessions" value={String(sessions.length)} />
             <Figure
               label="Average session"
-              value={sessions ? fmtMinutes(thisWeek / sessions) : "—"}
+              value={sessions.length ? fmtMinutes(thisWeek / sessions.length) : "—"}
             />
             <Figure label="Day streak" value={`${streak} ${streak === 1 ? "day" : "days"}`} />
           </dl>
@@ -108,6 +130,8 @@ function StatsPage() {
           </div>
         </section>
 
+        <TaskCompletionSummary sessions={sessions} onViewSessions={viewSessions} />
+
         <section className="paper-card px-6 pt-8 pb-6 sm:px-8">
           <h2 className="hand text-3xl">Day by day</h2>
           <p className="text-sm text-muted-foreground">Hours of deep work, Monday to Sunday.</p>
@@ -116,12 +140,12 @@ function StatsPage() {
 
         <section className="paper-card px-6 pt-8 pb-6 sm:px-8">
           <h2 className="hand text-3xl">Last 6 weeks</h2>
-          <p className="text-sm text-muted-foreground">Hours per week, oldest first.</p>
+          <p className="text-sm text-muted-foreground">Hours per week, newest first.</p>
           <div className="mt-6 space-y-3">
-            {weeks.map((w, i) => (
+            {[...weeks].reverse().map((w, i) => (
               <div key={w.weekStart} className="flex items-center gap-3">
                 <span className="w-16 shrink-0 text-xs text-muted-foreground">
-                  {i === weeks.length - 1 ? "this wk" : w.label}
+                  {i === 0 ? "this wk" : w.label}
                 </span>
                 <div className="h-6 flex-1 rounded-full border-2 border-dashed border-pencil/50 p-0.5">
                   <div
@@ -136,6 +160,13 @@ function StatsPage() {
             ))}
           </div>
         </section>
+
+        <WeeklySessionList
+          sessions={sessions}
+          open={sessionsOpen}
+          onOpenChange={setSessionsOpen}
+          headingRef={sessionsHeading}
+        />
 
         <section className="paper-card px-6 pt-8 pb-8 sm:px-8 lg:col-span-2">
           <h2 className="hand text-3xl">Sticker shelf</h2>

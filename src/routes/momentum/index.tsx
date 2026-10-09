@@ -1,3 +1,4 @@
+import { useSessionRevision } from "@/lib/session-context";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { PageCard, PageHeader } from "@/components/section-layout";
@@ -24,6 +25,7 @@ export const Route = createFileRoute("/momentum/")({
 });
 
 function MomentumHub() {
+  const revision = useSessionRevision();
   const timer = useTimer();
   const [note, setNote] = useState<Session | undefined>();
   const [week, setWeek] = useState({ seconds: 0, sessions: 0 });
@@ -31,7 +33,7 @@ function MomentumHub() {
   useEffect(() => {
     setNote(lastNote());
     setWeek({ seconds: weekSeconds(), sessions: sessionsThisWeek().length });
-  }, []);
+  }, [revision]);
 
   return (
     <>

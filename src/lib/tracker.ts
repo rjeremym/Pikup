@@ -5,6 +5,8 @@ export interface Session {
   start: number;
   end: number;
   durationSec: number;
+  /** The task planned for this session; absent on older sessions. */
+  plannedTask?: string | undefined;
   workedOn?: string | undefined;
   nextThing?: string | undefined;
   topic?: string | undefined;
@@ -51,6 +53,21 @@ const STICKERS_KEY = "pikup.stickers";
 const PLACED_KEY = "pikup.placedSticker";
 const TIMER_KEY = "pikup.timer";
 const PENDING_KEY = "pikup.pendingSession";
+const PENDING_DRAFT_KEY = "pikup.pendingNoteDraft";
+
+export interface PendingSession {
+  start: number;
+  elapsed: number;
+  end?: number | undefined;
+  planned?: string | undefined;
+}
+
+export interface SessionNoteDraft {
+  workedOn: string;
+  nextThing: string;
+  topic?: string | undefined;
+  outcome?: SessionOutcome | undefined;
+}
 /** Fired whenever the timer is saved, so every useTimer() on screen (e.g. the header pill) stays in sync. */
 const TIMER_EVENT = "pikup:timer";
 
@@ -97,9 +114,26 @@ export function saveSession(s: Session) {
   localStorage.setItem(SESSIONS_KEY, JSON.stringify([...getSessions(), s]));
 }
 
+/** Edits an existing session without changing its time, notes, or position in history. */
+export function updateSessionTask(
+  id: string,
+  changes: Pick<Session, "plannedTask" | "outcome">,
+): boolean {
+  const sessions = getSessions();
+  if (!sessions.some((session) => session.id === id)) return false;
+  const next = sessions.map((session) =>
+    session.id === id
+      ? { ...session, plannedTask: changes.plannedTask, outcome: changes.outcome }
+      : session,
+  );
+  localStorage.setItem(SESSIONS_KEY, JSON.stringify(next));
+  window.dispatchEvent(new Event("pikup:sessions"));
+  return true;
+}
+
 export function lastNote(): Session | undefined {
-  const withNote = getSessions().filter((s) => s.workedOn || s.nextThing);
-  return withNote[withNote.length - 1];
+  const latest = getSessions().at(-1);
+  return latest && (latest.workedOn?.trim() || latest.nextThing?.trim()) ? latest : undefined;
 }
 
 export function getUnlockedStickers(): string[] {
@@ -119,22 +153,37 @@ export function placeSticker(id: string | null) {
   localStorage.setItem(PLACED_KEY, JSON.stringify(id));
 }
 
-export function getPendingSession(): { start: number; elapsed: number } | null {
+export function getPendingSession(): PendingSession | null {
   if (typeof sessionStorage === "undefined") return null;
   try {
     const raw = sessionStorage.getItem(PENDING_KEY);
-    return raw ? (JSON.parse(raw) as { start: number; elapsed: number }) : null;
+    return raw ? (JSON.parse(raw) as PendingSession) : null;
   } catch {
     return null;
   }
 }
 
-export function setPendingSession(pending: { start: number; elapsed: number }) {
+export function setPendingSession(pending: PendingSession) {
   sessionStorage.setItem(PENDING_KEY, JSON.stringify(pending));
 }
 
 export function clearPendingSession() {
   sessionStorage.removeItem(PENDING_KEY);
+  sessionStorage.removeItem(PENDING_DRAFT_KEY);
+}
+
+export function getPendingNoteDraft(): SessionNoteDraft | null {
+  if (typeof sessionStorage === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(PENDING_DRAFT_KEY);
+    return raw ? (JSON.parse(raw) as SessionNoteDraft) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function savePendingNoteDraft(draft: SessionNoteDraft) {
+  sessionStorage.setItem(PENDING_DRAFT_KEY, JSON.stringify(draft));
 }
 
 /** Monday 00:00 of the week containing `ref` */
@@ -353,6 +402,7 @@ export function useTimer(): TimerState {
     paused: timer.paused,
     elapsed,
     start: () => {
+      if (loadTimer().running) return;
       commit({
         running: true,
         paused: false,
