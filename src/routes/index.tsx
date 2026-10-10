@@ -115,13 +115,13 @@ function Landing() {
       {/* Direct destinations grouped by the work they support. */}
       <section aria-labelledby="map-heading" className="mx-auto max-w-5xl px-4 pb-16">
         <h2 id="map-heading" className="hand text-4xl">
-          Plan, focus, and see your progress
+          Pick up, plan, and see your progress
         </h2>
         <p className="mt-2 max-w-2xl text-muted-foreground">
-          Choose what to build, pick up where you left off, and see what your focus time
+          Pick up where you left off, choose what to build next, and see what your focus time
           accomplished. Each page is one click away in the navigation.
         </p>
-        <div className="mt-8 grid gap-8 lg:grid-cols-3">
+        <div className="mt-8 grid gap-8 lg:grid-cols-2">
           {WORKFLOW_GROUPS.map((group) => (
             <WorkflowCard key={group.title} group={group} />
           ))}
@@ -284,20 +284,22 @@ function LastNotePreview() {
   );
 }
 
+/** The core job leads and spans the full width; planning and progress support it below. */
 const WORKFLOW_GROUPS = [
-  {
-    title: "Plan your work",
-    blurb: "Set a direction and choose what to build next.",
-    tape: "bg-accent/50",
-    text: "text-accent-foreground",
-    pages: [findPage("/intentions/goals"), findPage("/intentions/backlog")],
-  },
   {
     title: "Pick up & focus",
     blurb: "Spend less time remembering and more time making progress.",
     tape: "bg-primary/25",
     text: "text-primary",
     pages: [findPage("/momentum/timer"), findPage("/intentions/notes")],
+    featured: true,
+  },
+  {
+    title: "Plan your work",
+    blurb: "Set a direction and choose what to build next.",
+    tape: "bg-accent/50",
+    text: "text-accent-foreground",
+    pages: [findPage("/intentions/goals"), findPage("/intentions/backlog")],
   },
   {
     title: "See your progress",
@@ -310,14 +312,16 @@ const WORKFLOW_GROUPS = [
 
 function WorkflowCard({ group }: { group: (typeof WORKFLOW_GROUPS)[number] }) {
   return (
-    <div className="paper-card relative px-5 pt-9 pb-5">
+    <div className={cn("paper-card relative px-5 pt-9 pb-5", group.featured && "lg:col-span-2")}>
       <span
         className={cn("absolute -top-3 left-8 h-7 w-24 -rotate-3 rounded-sm", group.tape)}
         aria-hidden
       />
-      <h3 className={cn("hand text-3xl", group.text)}>{group.title}</h3>
+      <h3 className={cn("hand", group.featured ? "text-4xl" : "text-3xl", group.text)}>
+        {group.title}
+      </h3>
       <p className="mt-1 text-sm text-muted-foreground">{group.blurb}</p>
-      <ul className="mt-4 space-y-1">
+      <ul className={cn("mt-4", group.featured ? "grid gap-1 sm:grid-cols-2" : "space-y-1")}>
         {group.pages.map((page) => (
           <li key={page.to}>
             <Link
