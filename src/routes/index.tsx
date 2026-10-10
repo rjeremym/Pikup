@@ -18,13 +18,13 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Turn your next step into a focused session. Pikup brings back your last note, tracks your time, and shows what you accomplished.",
+          "A session tracker for solo devs building side projects. Pikup opens with the note you left last time, times your coding session, and keeps your next backlog tasks ready.",
       },
       { property: "og:title", content: "Pikup — pick up where you left off" },
       {
         property: "og:description",
         content:
-          "Turn your next step into a focused session. Pikup brings back your last note, tracks your time, and shows what you accomplished.",
+          "A session tracker for solo devs building side projects. Pikup opens with the note you left last time, times your coding session, and keeps your next backlog tasks ready.",
       },
     ],
   }),
@@ -66,12 +66,17 @@ function Landing() {
       {/* Hero: the promise, one primary action, and a peek at the core value (last note) */}
       <section className="mx-auto grid max-w-5xl gap-12 px-4 pt-12 pb-16 sm:pt-20 lg:grid-cols-[1fr_17rem] lg:items-center">
         <div>
+          {/* Who it's for, before the promise */}
+          <p className="mb-3 text-sm font-semibold tracking-wide text-muted-foreground uppercase">
+            For solo devs building side projects
+          </p>
           <h1 className="hand text-5xl leading-[1.08] sm:text-7xl">
             <span className="text-primary">Pick up</span> where you left off.
           </h1>
           <p className="mt-6 max-w-xl text-lg text-muted-foreground">
-            Turn your next step into a focused session. Pikup brings back your last note, tracks
-            your time, and shows what you accomplished—so every session moves your project forward.
+            You only get a few hours a week for your project. Pikup opens with the note you left
+            last time, times your coding session, and keeps your next few backlog tasks ready, so
+            you&apos;re building in the first minute, not the tenth.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-4">
             {timer.running ? (
@@ -95,6 +100,11 @@ function Landing() {
               </Link>
             )}
           </div>
+          {/* The discovery research behind the promise */}
+          <p className="mt-6 max-w-xl text-sm text-muted-foreground">
+            In a study of 10,000 programming sessions, only 1 in 10 got back to coding within a
+            minute (Parnin &amp; Rugaber, 2011).
+          </p>
         </div>
 
         <aside
