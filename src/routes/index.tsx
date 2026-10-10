@@ -19,8 +19,7 @@ import { exampleNotes, exampleWeekSeconds } from "@/lib/examples";
 import { PageLinkContent } from "@/components/site-header";
 import { Meter } from "@/components/section-layout";
 import { cn } from "@/lib/utils";
-import { Notice } from "@/components/form-bits";
-import { readJSON, writeJSON } from "@/lib/storage";
+import { openPrototypeIntro } from "@/lib/prototype-intro";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -66,8 +65,6 @@ function Landing() {
 
   return (
     <main>
-      <PrototypeBanner />
-
       {/* Hero: the promise, one primary action, and a peek at the core value (last note, time, backlog) */}
       <section className="mx-auto grid max-w-5xl gap-12 px-4 pt-12 pb-16 sm:pt-20 lg:grid-cols-[1fr_17rem] lg:items-center">
         <div>
@@ -157,7 +154,14 @@ function Landing() {
       </section>
 
       <footer className="border-t-2 border-dashed border-pencil/30 py-6 text-center text-sm text-muted-foreground">
-        Pikup · low-fidelity prototype · your data stays in this browser
+        Pikup · low-fidelity prototype · your data stays in this browser ·{" "}
+        <button
+          type="button"
+          onClick={openPrototypeIntro}
+          className="font-semibold underline decoration-dotted underline-offset-4 hover:text-foreground"
+        >
+          show the intro again
+        </button>
       </footer>
     </main>
   );
@@ -277,34 +281,6 @@ function LastNotePreview() {
         pick up from here <ArrowRight className="h-4 w-4" aria-hidden />
       </Link>
     </aside>
-  );
-}
-
-const PROTOTYPE_NOTICE_KEY = "pikup.prototypeNoticeDismissed";
-
-/** Sets expectations for testers; once dismissed it stays dismissed in this browser. */
-function PrototypeBanner() {
-  // read after mount so the server render and first client render match
-  const [open, setOpen] = useState(false);
-  useEffect(() => {
-    setOpen(!readJSON(PROTOTYPE_NOTICE_KEY, () => false));
-  }, []);
-
-  if (!open) return null;
-  return (
-    <div className="mx-auto max-w-5xl px-4 pt-6">
-      <Notice
-        onDismiss={() => {
-          writeJSON(PROTOTYPE_NOTICE_KEY, true);
-          setOpen(false);
-        }}
-      >
-        <strong className="text-foreground">This is a prototype.</strong> It&apos;s here to test the
-        idea and how the pages flow together. Nothing you enter is saved to an account or sent
-        anywhere (it stays in this browser), and some parts of the site aren&apos;t meant to look
-        good yet.
-      </Notice>
-    </div>
   );
 }
 
