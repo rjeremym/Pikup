@@ -2,11 +2,22 @@ import { useSessionRevision } from "@/lib/session-context";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowRight, Play } from "lucide-react";
-import { lastNote, workedOnLabel, type Session } from "@/lib/tracker";
+import {
+  fmtHours,
+  fmtMinutes,
+  getSessions,
+  lastNote,
+  weekSeconds,
+  workedOnLabel,
+  type Session,
+} from "@/lib/tracker";
 import { useSessionControls } from "@/lib/session-context";
 import { useAccount } from "@/lib/account";
 import { findPage } from "@/lib/nav";
+import { getBacklog, getWeeklyGoalHours } from "@/lib/intentions";
+import { exampleNotes, exampleWeekSeconds } from "@/lib/examples";
 import { PageLinkContent } from "@/components/site-header";
+import { Meter } from "@/components/section-layout";
 import { cn } from "@/lib/utils";
 import { Notice } from "@/components/form-bits";
 import { readJSON, writeJSON } from "@/lib/storage";
@@ -50,20 +61,14 @@ const LOOP = [
 ];
 
 function Landing() {
-  const revision = useSessionRevision();
   const { timer, pending, ready, startSession, finishNote } = useSessionControls();
   const account = useAccount();
-  const [note, setNote] = useState<Session | undefined>();
-
-  useEffect(() => {
-    setNote(lastNote());
-  }, [revision]);
 
   return (
     <main>
       <PrototypeBanner />
 
-      {/* Hero: the promise, one primary action, and a peek at the core value (last note) */}
+      {/* Hero: the promise, one primary action, and a peek at the core value (last note, time, backlog) */}
       <section className="mx-auto grid max-w-5xl gap-12 px-4 pt-12 pb-16 sm:pt-20 lg:grid-cols-[1fr_17rem] lg:items-center">
         <div>
           {/* Who it's for, before the promise */}
@@ -107,36 +112,7 @@ function Landing() {
           </p>
         </div>
 
-        <aside
-          aria-label="Your last note"
-          className="paper-card relative mx-auto w-full max-w-xs rotate-2 px-5 pt-9 pb-5"
-        >
-          <div className="washi absolute -top-3 left-1/2 h-6 w-20 -translate-x-1/2 -rotate-3" />
-          <p className="hand text-2xl text-primary">Note to self</p>
-          {note && (note.workedOn || note.nextThing) ? (
-            <div className="mt-2 space-y-1.5 text-sm">
-              {note.workedOn && (
-                <p>
-                  <span className="font-semibold">{workedOnLabel(note)}: </span>
-                  {note.workedOn}
-                </p>
-              )}
-              {note.nextThing && (
-                <p>
-                  <span className="font-semibold">Next up: </span>
-                  <span className="scribble-underline">{note.nextThing}</span>
-                </p>
-              )}
-            </div>
-          ) : (
-            <p className="mt-2 text-sm text-muted-foreground italic">
-              Nothing here yet… finish a session and the note you leave lands right here.
-            </p>
-          )}
-          <Link to="/momentum/timer" className="sketch-link mt-3 text-base">
-            pick up from here <ArrowRight className="h-4 w-4" aria-hidden />
-          </Link>
-        </aside>
+        <LastNotePreview />
       </section>
 
       {/* Direct destinations grouped by the work they support. */}
@@ -184,6 +160,123 @@ function Landing() {
         Pikup · low-fidelity prototype · your data stays in this browser
       </footer>
     </main>
+  );
+}
+
+const SESSION_ICON = findPage("/momentum/timer").icon;
+const BACKLOG_ICON = findPage("/intentions/backlog").icon;
+
+interface Preview {
+  /** true until the first session, so a new visitor sees the example project instead of blanks */
+  example: boolean;
+  note: Session | undefined;
+  lastSessionSec: number | undefined;
+  weekSec: number;
+  goalHours: number;
+  /** the first Up next backlog item that isn't already the note's next step */
+  queued: string | undefined;
+}
+
+function readPreview(): Preview {
+  const sessions = getSessions();
+  const example = sessions.length === 0;
+  const note = example ? exampleNotes()[0] : lastNote();
+  return {
+    example,
+    note,
+    lastSessionSec: example ? note?.durationSec : sessions.at(-1)?.durationSec,
+    weekSec: example ? exampleWeekSeconds() : weekSeconds(),
+    goalHours: getWeeklyGoalHours(),
+    queued: getBacklog().find((item) => item.lane === "next" && item.title !== note?.nextThing)
+      ?.title,
+  };
+}
+
+/** The core value at a glance: the last note, time this week, and what's queued in the backlog. */
+function LastNotePreview() {
+  const revision = useSessionRevision();
+  // read after mount so the server render and first client render match
+  const [preview, setPreview] = useState<Preview | null>(null);
+
+  useEffect(() => {
+    setPreview(readPreview());
+  }, [revision]);
+
+  const note = preview?.note;
+  return (
+    <aside
+      aria-label={preview?.example ? "An example of your last note" : "Your last note"}
+      className="paper-card relative mx-auto w-full max-w-xs rotate-2 px-5 pt-9 pb-5"
+    >
+      <div className="washi absolute -top-3 left-1/2 h-6 w-20 -translate-x-1/2 -rotate-3" />
+      <div className="flex items-baseline justify-between gap-2">
+        <p className="hand text-2xl text-primary">Note to self</p>
+        {preview?.example && (
+          <span className="rounded-full border border-dashed border-pencil/50 px-2 text-xs text-muted-foreground">
+            Example
+          </span>
+        )}
+      </div>
+      {preview && (
+        <>
+          {note ? (
+            <div className="mt-2 space-y-1.5 text-sm">
+              {note.workedOn && (
+                <p>
+                  <span className="font-semibold">{workedOnLabel(note)}: </span>
+                  {note.workedOn}
+                </p>
+              )}
+              {note.nextThing && (
+                <p>
+                  <span className="font-semibold">Next up: </span>
+                  <span className="scribble-underline">{note.nextThing}</span>
+                </p>
+              )}
+            </div>
+          ) : (
+            <p className="mt-2 text-sm text-muted-foreground italic">
+              No note from your last session. End your next one with a note and it lands here.
+            </p>
+          )}
+
+          <div className="mt-4 space-y-2 border-t-2 border-dashed border-pencil/30 pt-3 text-sm">
+            <p className="flex items-start gap-2">
+              <SESSION_ICON className="mt-0.5 h-4 w-4 shrink-0 text-pencil" aria-hidden />
+              <span>
+                {preview.lastSessionSec !== undefined &&
+                  `${fmtMinutes(preview.lastSessionSec)} last session · `}
+                {fmtHours(preview.weekSec)} of {preview.goalHours}h this week
+              </span>
+            </p>
+            <Meter
+              value={preview.weekSec}
+              max={preview.goalHours * 3600}
+              label="Progress toward your weekly goal"
+              className="h-2"
+            />
+            <p className="flex items-start gap-2">
+              <BACKLOG_ICON className="mt-0.5 h-4 w-4 shrink-0 text-pencil" aria-hidden />
+              <span>
+                <span className="font-semibold">From your backlog: </span>
+                {preview.queued ?? (
+                  <span className="text-muted-foreground italic">nothing else queued</span>
+                )}
+              </span>
+            </p>
+          </div>
+
+          {preview.example && (
+            <p className="mt-3 text-xs text-muted-foreground italic">
+              Your own note replaces this example after your first session.
+            </p>
+          )}
+        </>
+      )}
+      <Link to="/momentum/timer" className="sketch-link mt-3 text-base">
+        pick up from here <ArrowRight className="h-4 w-4" aria-hidden />
+      </Link>
+    </aside>
   );
 }
 
