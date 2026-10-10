@@ -1,15 +1,15 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { LogIn } from "lucide-react";
-import { PageHeader } from "@/components/section-layout";
-import { Notice, PasswordField, PrototypeNotice, TextField } from "@/components/form-bits";
+import { toast } from "sonner";
+import { AuthCard, Notice, PasswordField, TextField } from "@/components/form-bits";
 import { EMAIL_PATTERN, signIn, useAccount } from "@/lib/account";
 
 export const Route = createFileRoute("/account/sign-in")({
   head: () => ({
     meta: [
-      { title: "Sign in — Pikup" },
-      { name: "description", content: "Sign in to pick up where you left off." },
+      { title: "Log in — Pikup" },
+      { name: "description", content: "Log in to pick up where you left off." },
     ],
   }),
   component: SignInPage,
@@ -38,46 +38,56 @@ function SignInPage() {
     setSubmitted(true);
     if (errors.email || errors.password) return;
     signIn(email.trim());
-    navigate({ to: "/account" });
+    toast.success("You're logged in. Your data is saved to your account.");
+    // happy path: back to the summary, where setting goals is the next step
+    navigate({ to: "/momentum/stats" });
   };
 
   return (
-    <>
-      <PageHeader title="Sign in" lead="Welcome back. Your next step is waiting." />
-      <div className="max-w-md">
-        {account && (
-          <Notice className="mb-6">
-            You're already signed in as <strong className="text-foreground">{account.email}</strong>
-            . Signing in again switches accounts.
-          </Notice>
-        )}
+    <AuthCard
+      title="Log in"
+      lead="Welcome back. Your next step is waiting."
+      footer={
+        <>
+          Don't have an account?{" "}
+          <Link
+            to="/account/create"
+            className="font-semibold text-foreground underline decoration-dotted underline-offset-4"
+          >
+            Create one
+          </Link>
+        </>
+      }
+    >
+      {account && (
+        <Notice className="mb-6">
+          You're already logged in as <strong className="text-foreground">{account.email}</strong>.
+          Logging in again switches accounts.
+        </Notice>
+      )}
 
-        <form
-          noValidate
-          onSubmit={submit}
-          className="paper-card relative space-y-5 px-6 pt-10 pb-6"
-        >
-          <div className="washi absolute -top-3 left-8 h-7 w-24 -rotate-3" />
-          <TextField
-            label="Email"
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            error={submitted ? errors.email : undefined}
+      <form noValidate onSubmit={submit} className="space-y-5">
+        <TextField
+          label="Email"
+          type="email"
+          autoComplete="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          error={submitted ? errors.email : undefined}
+        />
+        <div>
+          <PasswordField
+            label="Password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            error={submitted ? errors.password : undefined}
           />
-          <div>
-            <PasswordField
-              label="Password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              error={submitted ? errors.password : undefined}
-            />
+          <div className="mt-2 text-right">
             <button
               type="button"
               onClick={() => setForgot(true)}
-              className="mt-2 text-sm text-muted-foreground underline decoration-dotted underline-offset-4 hover:text-foreground"
+              className="text-sm text-muted-foreground underline decoration-dotted underline-offset-4 hover:text-foreground"
             >
               Forgot your password?
             </button>
@@ -87,22 +97,11 @@ function SignInPage() {
               </p>
             )}
           </div>
-          <button type="submit" className="sketch-btn-primary w-full">
-            <LogIn className="h-5 w-5" aria-hidden /> Sign in
-          </button>
-        </form>
-
-        <p className="mt-6 text-center text-sm text-muted-foreground">
-          New here?{" "}
-          <Link
-            to="/account/create"
-            className="font-semibold text-foreground underline decoration-dotted underline-offset-4"
-          >
-            Create an account
-          </Link>
-        </p>
-        <PrototypeNotice className="mt-8" />
-      </div>
-    </>
+        </div>
+        <button type="submit" className="sketch-btn-primary w-full">
+          <LogIn className="h-5 w-5" aria-hidden /> Log in
+        </button>
+      </form>
+    </AuthCard>
   );
 }

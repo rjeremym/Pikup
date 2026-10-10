@@ -1,5 +1,5 @@
 import { useId, useState, type InputHTMLAttributes, type ReactNode } from "react";
-import { Check, Circle, CircleAlert, Eye, EyeOff, Info } from "lucide-react";
+import { Check, Circle, CircleAlert, Eye, EyeOff, Info, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface TextFieldProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -106,10 +106,13 @@ export function Notice({
   children,
   tone = "info",
   className,
+  onDismiss,
 }: {
   children: ReactNode;
   tone?: "info" | "success";
   className?: string | undefined;
+  /** shows a close button */
+  onDismiss?: () => void;
 }) {
   return (
     <div
@@ -127,7 +130,47 @@ export function Notice({
       ) : (
         <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
       )}
-      <div>{children}</div>
+      <div className={onDismiss && "flex-1"}>{children}</div>
+      {onDismiss && (
+        <button
+          type="button"
+          onClick={onDismiss}
+          aria-label="Dismiss"
+          className="-my-1 -mr-2 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg hover:bg-muted hover:text-foreground"
+        >
+          <X className="h-4 w-4" aria-hidden />
+        </button>
+      )}
+    </div>
+  );
+}
+
+/** A traditional centred account card: title, form, then a footer line linking to the other form. */
+export function AuthCard({
+  title,
+  lead,
+  footer,
+  children,
+}: {
+  title: string;
+  lead?: ReactNode;
+  footer?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <div className="mx-auto mt-10 w-full max-w-md">
+      <section className="paper-card relative px-6 pt-10 pb-6 sm:px-8">
+        <div className="washi absolute -top-3 left-1/2 h-7 w-24 -translate-x-1/2 -rotate-2" />
+        <h1 className="hand text-center text-5xl">{title}</h1>
+        {lead && <p className="mt-2 text-center text-muted-foreground">{lead}</p>}
+        <div className="mt-8">{children}</div>
+        {footer && (
+          <div className="mt-6 border-t-2 border-dashed border-pencil/30 pt-5 text-center text-sm text-muted-foreground">
+            {footer}
+          </div>
+        )}
+      </section>
+      <PrototypeNotice className="mt-6" />
     </div>
   );
 }

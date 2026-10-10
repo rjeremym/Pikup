@@ -23,7 +23,7 @@ export type SectionId = "momentum" | "intentions" | "account";
 export interface NavPage {
   to: AppPath;
   label: string;
-  /** shorter label for tight spots (section tabs on phones) */
+  /** shorter label for tight spots (e.g. the phone menu) */
   short?: string;
   blurb: string;
   icon: LucideIcon;
@@ -39,7 +39,7 @@ export interface NavSection extends NavPage {
 
 /**
  * The site map. Home → section → page → sub-page.
- * The header, mobile menu, section tabs, breadcrumbs, hub pages and landing map all read from here,
+ * The header, mobile menu, hub pages and landing map all read from here,
  * so the hierarchy only has to change in one place.
  */
 export const SECTIONS: NavSection[] = [
@@ -109,7 +109,7 @@ export const SECTIONS: NavSection[] = [
     blurb: "Keep your sessions safe across devices.",
     icon: UserRound,
     children: [
-      { to: "/account/sign-in", label: "Sign in", blurb: "Welcome back.", icon: LogIn },
+      { to: "/account/sign-in", label: "Log in", blurb: "Welcome back.", icon: LogIn },
       {
         to: "/account/create",
         label: "Create account",
@@ -129,36 +129,26 @@ export const SECTIONS: NavSection[] = [
 ];
 
 /** Section colours, drawn from the existing palette. Full class strings so Tailwind can see them. */
-export const TONE: Record<
-  SectionId,
-  { dot: string; text: string; tape: string; tabActive: string; bar: string }
-> = {
+export const TONE: Record<SectionId, { dot: string; text: string; tape: string; bar: string }> = {
   momentum: {
     dot: "bg-primary",
     text: "text-primary",
     tape: "bg-primary/25",
-    tabActive: "data-[status=active]:shadow-[inset_0_4px_0_var(--color-primary)]",
     bar: "bg-primary",
   },
   intentions: {
     dot: "bg-accent",
     text: "text-accent-foreground",
     tape: "bg-accent/50",
-    tabActive: "data-[status=active]:shadow-[inset_0_4px_0_var(--color-accent)]",
     bar: "bg-accent",
   },
   account: {
     dot: "bg-pencil",
     text: "text-pencil",
     tape: "bg-washi",
-    tabActive: "data-[status=active]:shadow-[inset_0_4px_0_var(--color-pencil)]",
     bar: "bg-pencil",
   },
 };
-
-export function sectionById(id: SectionId): NavSection {
-  return SECTIONS.find((s) => s.id === id)!;
-}
 
 export function findPage(to: AppPath): NavPage {
   const walk = (pages: NavPage[]): NavPage | undefined => {
@@ -174,31 +164,10 @@ export function findPage(to: AppPath): NavPage {
   return page;
 }
 
-export function visibleChildren(page: NavPage): NavPage[] {
-  return (page.children ?? []).filter((c) => !c.hidden);
-}
-
 /** True when `pathname` is `to` or somewhere beneath it. */
 export function isWithin(pathname: string, to: string): boolean {
   const path = pathname.replace(/\/+$/, "") || "/";
   return path === to || path.startsWith(`${to}/`);
-}
-
-export interface Crumb {
-  label: string;
-  to: AppPath;
-}
-
-/** Home → section → page → sub-page for the current URL. */
-export function trailFor(pathname: string): Crumb[] {
-  const trail: Crumb[] = [{ label: "Home", to: "/" }];
-  let level: NavPage[] = SECTIONS;
-  for (;;) {
-    const hit = level.find((p) => isWithin(pathname, p.to));
-    if (!hit) return trail;
-    trail.push({ label: hit.label, to: hit.to });
-    level = hit.children ?? [];
-  }
 }
 
 /** Planning, sessions, and progress are visible directly in the global navbar. */

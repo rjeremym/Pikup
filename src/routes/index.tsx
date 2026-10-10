@@ -8,6 +8,8 @@ import { useAccount } from "@/lib/account";
 import { findPage } from "@/lib/nav";
 import { PageLinkContent } from "@/components/site-header";
 import { cn } from "@/lib/utils";
+import { Notice } from "@/components/form-bits";
+import { readJSON, writeJSON } from "@/lib/storage";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -59,6 +61,8 @@ function Landing() {
 
   return (
     <main>
+      <PrototypeBanner />
+
       {/* Hero: the promise, one primary action, and a peek at the core value (last note) */}
       <section className="mx-auto grid max-w-5xl gap-12 px-4 pt-12 pb-16 sm:pt-20 lg:grid-cols-[1fr_17rem] lg:items-center">
         <div>
@@ -170,6 +174,34 @@ function Landing() {
         Pikup · low-fidelity prototype · your data stays in this browser
       </footer>
     </main>
+  );
+}
+
+const PROTOTYPE_NOTICE_KEY = "pikup.prototypeNoticeDismissed";
+
+/** Sets expectations for testers; once dismissed it stays dismissed in this browser. */
+function PrototypeBanner() {
+  // read after mount so the server render and first client render match
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    setOpen(!readJSON(PROTOTYPE_NOTICE_KEY, () => false));
+  }, []);
+
+  if (!open) return null;
+  return (
+    <div className="mx-auto max-w-5xl px-4 pt-6">
+      <Notice
+        onDismiss={() => {
+          writeJSON(PROTOTYPE_NOTICE_KEY, true);
+          setOpen(false);
+        }}
+      >
+        <strong className="text-foreground">This is a prototype.</strong> It&apos;s here to test the
+        idea and how the pages flow together. Nothing you enter is saved to an account or sent
+        anywhere (it stays in this browser), and some parts of the site aren&apos;t meant to look
+        good yet.
+      </Notice>
+    </div>
   );
 }
 

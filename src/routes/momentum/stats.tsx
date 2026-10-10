@@ -1,7 +1,7 @@
-import { useSessionRevision } from "@/lib/session-context";
+import { useSessionControls, useSessionRevision } from "@/lib/session-context";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, Lock, Minus, TrendingDown, TrendingUp } from "lucide-react";
+import { ArrowRight, Lock, Minus, TrendingDown, TrendingUp, UserPlus } from "lucide-react";
 import {
   recentWeeks,
   weekSeconds,
@@ -20,7 +20,8 @@ import {
 } from "@/lib/tracker";
 import { getWeeklyGoalHours } from "@/lib/intentions";
 import { MILESTONES, STICKER_IMAGES } from "@/lib/stickers";
-import { Meter, PageHeader } from "@/components/section-layout";
+import { HERO_BUTTON, Meter, NextStepLink, PageHeader } from "@/components/section-layout";
+import { useAccount } from "@/lib/account";
 import { cn } from "@/lib/utils";
 import { TaskCompletionSummary, WeeklySessionList } from "@/components/task-completion-summary";
 
@@ -46,6 +47,9 @@ export const Route = createFileRoute("/momentum/stats")({
 
 function StatsPage() {
   const revision = useSessionRevision();
+  // wait for hydration so a logged-in visitor never sees the "save your data" card flash
+  const { ready } = useSessionControls();
+  const account = useAccount();
   const [sessionsOpen, setSessionsOpen] = useState(false);
   const sessionsHeading = useRef<HTMLHeadingElement>(null);
 
@@ -87,10 +91,13 @@ function StatsPage() {
   return (
     <>
       <PageHeader title="Weekly summary" lead="Your time and task completion, side by side.">
-        <Link to="/intentions/goals" className="sketch-link">
-          Goals
-        </Link>
+        {/* happy path: once your data is saved, setting goals is the next step */}
+        <NextStepLink to="/intentions/goals" emphasized={ready && Boolean(account)}>
+          Set your goals
+        </NextStepLink>
       </PageHeader>
+
+      {ready && !account && <SaveYourData />}
 
       <div className="grid gap-8 lg:grid-cols-2">
         <section className="paper-card relative px-6 pt-10 pb-6 sm:px-8">
@@ -230,6 +237,35 @@ function Figure({ label, value }: { label: string; value: string }) {
 }
 
 /** Change vs last week, told with an arrow + words rather than colour alone. */
+/** Happy path, front and centre: data only lives in this browser until there's an account. */
+function SaveYourData() {
+  return (
+    <section
+      aria-labelledby="save-heading"
+      className="paper-card relative mb-8 flex flex-wrap items-center justify-between gap-6 px-6 pt-10 pb-6 sm:px-8"
+    >
+      <div className="washi absolute -top-3 left-10 h-7 w-24 -rotate-3" />
+      <div className="max-w-xl">
+        <h2 id="save-heading" className="hand text-4xl">
+          Want to save your data?
+        </h2>
+        <p className="mt-1 text-muted-foreground">
+          Right now your sessions and notes only live in this browser. Log in or create an account
+          to keep them.
+        </p>
+      </div>
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+        <Link to="/account/create" className={HERO_BUTTON}>
+          <UserPlus className="h-6 w-6" aria-hidden /> Create an account
+        </Link>
+        <Link to="/account/sign-in" className="sketch-link">
+          or log in
+        </Link>
+      </div>
+    </section>
+  );
+}
+
 function WeekDelta({ thisWeek, lastWeek }: { thisWeek: number; lastWeek: number }) {
   const delta = thisWeek - lastWeek;
   const [Icon, text] =

@@ -1,8 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
-import { KeyRound, Lock } from "lucide-react";
-import { PageHeader } from "@/components/section-layout";
-import { Checklist, Notice, PasswordField, PrototypeNotice } from "@/components/form-bits";
+import { ArrowLeft, KeyRound, Lock } from "lucide-react";
+import { AuthCard, Checklist, Notice, PasswordField } from "@/components/form-bits";
 import { passwordChecks, useAccount } from "@/lib/account";
 
 export const Route = createFileRoute("/account/password")({
@@ -50,87 +49,90 @@ function ChangePasswordPage() {
   };
 
   return (
-    <>
-      <PageHeader
-        title="Change password"
-        lead="Choose something new that you haven't used here before."
-      />
-      <div className="max-w-md">
-        {/* Constraint: the form only works for a signed-in account, and says why */}
-        {!account && (
-          <Notice className="mb-6">
-            <span className="flex items-center gap-1.5 font-semibold text-foreground">
-              <Lock className="h-4 w-4" aria-hidden /> Sign in first
-            </span>
-            You need to be signed in to change a password.{" "}
-            <Link
-              to="/account/sign-in"
-              className="font-semibold text-foreground underline decoration-dotted underline-offset-2"
-            >
-              Sign in
-            </Link>{" "}
-            or{" "}
-            <Link
-              to="/account/create"
-              className="font-semibold text-foreground underline decoration-dotted underline-offset-2"
-            >
-              create an account
-            </Link>
-            .
-          </Notice>
-        )}
-        {saved && (
-          <Notice tone="success" className="mb-6">
-            <strong>Password updated.</strong> (Prototype: nothing was actually changed.)
-          </Notice>
-        )}
+    <AuthCard
+      title="Change password"
+      lead="Choose something new that you haven't used here before."
+      footer={
+        <Link
+          to="/account"
+          className="inline-flex items-center gap-1 font-semibold text-foreground underline decoration-dotted underline-offset-4"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden /> Back to your account
+        </Link>
+      }
+    >
+      {/* Constraint: the form only works for a logged-in account, and says why */}
+      {!account && (
+        <Notice className="mb-6">
+          <span className="flex items-center gap-1.5 font-semibold text-foreground">
+            <Lock className="h-4 w-4" aria-hidden /> Log in first
+          </span>
+          You need to be logged in to change a password.{" "}
+          <Link
+            to="/account/sign-in"
+            className="font-semibold text-foreground underline decoration-dotted underline-offset-2"
+          >
+            Log in
+          </Link>{" "}
+          or{" "}
+          <Link
+            to="/account/create"
+            className="font-semibold text-foreground underline decoration-dotted underline-offset-2"
+          >
+            create an account
+          </Link>
+          .
+        </Notice>
+      )}
+      {saved && (
+        <Notice tone="success" className="mb-6">
+          <strong>Password updated.</strong> (Prototype: nothing was actually changed.)
+        </Notice>
+      )}
 
-        <form noValidate onSubmit={submit} className="paper-card relative px-6 pt-10 pb-6">
-          <div className="washi absolute -top-3 left-8 h-7 w-24 -rotate-3" />
-          <fieldset disabled={!account} className="space-y-5 disabled:opacity-60">
-            <legend className="sr-only">Change password</legend>
-            {/* lets password managers know which account this is for */}
-            {account && (
-              <input type="email" autoComplete="username" value={account.email} readOnly hidden />
-            )}
-            <PasswordField
-              label="Current password"
-              autoComplete="current-password"
-              value={current}
-              onChange={(e) => {
-                setCurrent(e.target.value);
-                setSaved(false);
-              }}
-              error={show(errors.current)}
-            />
-            <PasswordField
-              label="New password"
-              autoComplete="new-password"
-              value={next}
-              onChange={(e) => {
-                setNext(e.target.value);
-                setSaved(false);
-              }}
-              error={show(errors.next)}
-            />
-            <PasswordField
-              label="Confirm new password"
-              autoComplete="new-password"
-              value={confirm}
-              onChange={(e) => {
-                setConfirm(e.target.value);
-                setSaved(false);
-              }}
-              error={show(errors.confirm)}
-            />
-            <Checklist items={checks} />
-            <button type="submit" className="sketch-btn-primary w-full">
-              <KeyRound className="h-5 w-5" aria-hidden /> Update password
-            </button>
-          </fieldset>
-        </form>
-        <PrototypeNotice className="mt-8" />
-      </div>
-    </>
+      <form noValidate onSubmit={submit}>
+        <fieldset disabled={!account} className="space-y-5 disabled:opacity-60">
+          <legend className="sr-only">Change password</legend>
+          {/* lets password managers know which account this is for */}
+          {account && (
+            <input type="email" autoComplete="username" value={account.email} readOnly hidden />
+          )}
+          <PasswordField
+            label="Current password"
+            autoComplete="current-password"
+            value={current}
+            onChange={(e) => {
+              setCurrent(e.target.value);
+              setSaved(false);
+            }}
+            error={show(errors.current)}
+          />
+          <PasswordField
+            label="New password"
+            autoComplete="new-password"
+            value={next}
+            onChange={(e) => {
+              setNext(e.target.value);
+              setSaved(false);
+            }}
+            error={show(errors.next)}
+          />
+          <PasswordField
+            label="Confirm new password"
+            autoComplete="new-password"
+            value={confirm}
+            onChange={(e) => {
+              setConfirm(e.target.value);
+              setSaved(false);
+            }}
+            error={show(errors.confirm)}
+          />
+          <Checklist items={checks} />
+          <button type="submit" className="sketch-btn-primary w-full">
+            <KeyRound className="h-5 w-5" aria-hidden /> Update password
+          </button>
+        </fieldset>
+      </form>
+    </AuthCard>
   );
 }

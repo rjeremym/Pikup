@@ -171,7 +171,7 @@ function AccountMenu() {
         {!account && (
           <>
             <DropdownMenuItem asChild>
-              <Link to="/account/sign-in">Sign in</Link>
+              <Link to="/account/sign-in">Log in</Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <Link to="/account/create">Create account</Link>
@@ -185,7 +185,7 @@ function AccountMenu() {
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={signOut}>
               <LogOut className="mr-2 h-4 w-4" aria-hidden />
-              Sign out
+              Log out
             </DropdownMenuItem>
           </>
         )}
@@ -228,7 +228,7 @@ function MobileMenu({ active }: { active: string | undefined }) {
       >
         <SheetTitle className="hand text-3xl font-normal text-primary">Pikup</SheetTitle>
         <SheetDescription>
-          {account ? `Signed in as ${account.name}.` : "Where to next?"}
+          {account ? `Logged in as ${account.name}.` : "Where to next?"}
         </SheetDescription>
         <nav aria-label="Mobile navigation" className="mt-6 space-y-2">
           {PRIMARY_NAV.map((page, index) => (
@@ -256,7 +256,7 @@ function MobileMenu({ active }: { active: string | undefined }) {
             {!account && (
               <>
                 <Link to="/account/sign-in" onClick={close} className={linkClass}>
-                  Sign in
+                  Log in
                 </Link>
                 <Link to="/account/create" onClick={close} className={linkClass}>
                   Create account
@@ -277,7 +277,7 @@ function MobileMenu({ active }: { active: string | undefined }) {
                   className={linkClass}
                 >
                   <LogOut className="h-4 w-4" aria-hidden />
-                  Sign out
+                  Log out
                 </button>
               </>
             )}

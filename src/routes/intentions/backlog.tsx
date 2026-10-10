@@ -1,8 +1,8 @@
 import { useSessionRevision } from "@/lib/session-context";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { ChevronUp, Plus, Trash2, Undo2, X } from "lucide-react";
-import { PageHeader } from "@/components/section-layout";
+import { NextStepLink, PageHeader } from "@/components/section-layout";
 import { Notice } from "@/components/form-bits";
 import {
   UP_NEXT_LIMIT,
@@ -52,6 +52,7 @@ function BacklogPage() {
 
   const lane = (l: Lane) => items?.filter((i) => i.lane === l) ?? [];
   const upNextFull = lane("next").length >= UP_NEXT_LIMIT;
+  const added = items?.find((i) => i.id === justAdded);
 
   const add = (e: FormEvent) => {
     e.preventDefault();
@@ -131,9 +132,10 @@ function BacklogPage() {
         title="Product backlog"
         lead="Everything you mean to build. Keep the next few up front, so a session never starts with “what now?”"
       >
-        <Link to="/intentions/goals" className="sketch-link">
-          Goals
-        </Link>
+        {/* happy path: once something's in the backlog, the weekly summary closes the loop */}
+        <NextStepLink to="/momentum/stats" emphasized={justAdded !== null}>
+          See your summary
+        </NextStepLink>
       </PageHeader>
 
       <form
@@ -206,6 +208,13 @@ function BacklogPage() {
           Pick <strong>+ New topic…</strong> to add your own tag.
         </p>
       </form>
+
+      {added && !removed && (
+        <Notice tone="success" className="mt-4">
+          Added “{added.title}” to Later. Add anything else you want, then head back to your weekly
+          summary.
+        </Notice>
+      )}
 
       {removed && (
         <Notice className="mt-4">

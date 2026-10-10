@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { ArrowRight, NotebookPen, Pause, Timer } from "lucide-react";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
@@ -48,6 +49,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [revision, setRevision] = useState(0);
   const [feedback, setFeedback] = useState("");
   const returnFocus = useRef<HTMLElement | null>(null);
+  const navigate = useNavigate();
   const dismissFocus = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -92,6 +94,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setWelcomeOpen(showWelcome);
     setReminder(previous ?? null);
     setFeedback("Session started.");
+    // Wherever a session is started from, running it happens on the session page.
+    navigate({ to: "/momentum/timer" });
   };
 
   const endSession = () => {
@@ -190,6 +194,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           : "Session saved without a note.";
     setFeedback(message);
     toast.success(message);
+    navigate({ to: "/momentum/stats" });
   };
 
   const changeNoteOpen = (open: boolean) => {
