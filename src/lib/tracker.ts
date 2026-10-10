@@ -56,6 +56,8 @@ const PENDING_KEY = "pikup.pendingSession";
 const PENDING_DRAFT_KEY = "pikup.pendingNoteDraft";
 
 export interface PendingSession {
+  /** The already-recorded session this unfinished note belongs to. */
+  id?: string | undefined;
   start: number;
   elapsed: number;
   end?: number | undefined;
@@ -112,6 +114,20 @@ export function getSessions(): Session[] {
 
 export function saveSession(s: Session) {
   localStorage.setItem(SESSIONS_KEY, JSON.stringify([...getSessions(), s]));
+  window.dispatchEvent(new Event("pikup:sessions"));
+}
+
+type SessionDetails = Pick<Session, "plannedTask" | "outcome" | "workedOn" | "nextThing" | "topic">;
+
+function updateSessionDetails(id: string, changes: Partial<SessionDetails>): boolean {
+  const sessions = getSessions();
+  if (!sessions.some((session) => session.id === id)) return false;
+  const next = sessions.map((session) =>
+    session.id === id ? { ...session, ...changes } : session,
+  );
+  localStorage.setItem(SESSIONS_KEY, JSON.stringify(next));
+  window.dispatchEvent(new Event("pikup:sessions"));
+  return true;
 }
 
 /** Edits an existing session without changing its time, notes, or position in history. */
@@ -119,16 +135,15 @@ export function updateSessionTask(
   id: string,
   changes: Pick<Session, "plannedTask" | "outcome">,
 ): boolean {
-  const sessions = getSessions();
-  if (!sessions.some((session) => session.id === id)) return false;
-  const next = sessions.map((session) =>
-    session.id === id
-      ? { ...session, plannedTask: changes.plannedTask, outcome: changes.outcome }
-      : session,
-  );
-  localStorage.setItem(SESSIONS_KEY, JSON.stringify(next));
-  window.dispatchEvent(new Event("pikup:sessions"));
-  return true;
+  return updateSessionDetails(id, changes);
+}
+
+/** Adds a note to the session recorded when its timer stopped, without duplicating it. */
+export function updateSessionNote(
+  id: string,
+  changes: Pick<Session, "workedOn" | "nextThing" | "topic" | "outcome">,
+): boolean {
+  return updateSessionDetails(id, changes);
 }
 
 export function lastNote(): Session | undefined {
@@ -165,6 +180,26 @@ export function getPendingSession(): PendingSession | null {
 
 export function setPendingSession(pending: PendingSession) {
   sessionStorage.setItem(PENDING_KEY, JSON.stringify(pending));
+}
+
+/** Records ended time once, including unfinished sessions from the older wrap-up flow. */
+export function saveEndedSession(pending: PendingSession): PendingSession & { id: string } {
+  const existing = getSessions().find((session) =>
+    pending.id ? session.id === pending.id : session.start === pending.start,
+  );
+  const saved = { ...pending, id: existing?.id ?? pending.id ?? crypto.randomUUID() };
+  // Keep the identity before writing the record so a retry or reload cannot duplicate it.
+  setPendingSession(saved);
+  if (!existing) {
+    saveSession({
+      id: saved.id,
+      start: saved.start,
+      end: saved.end ?? saved.start + saved.elapsed * 1000,
+      durationSec: saved.elapsed,
+      plannedTask: saved.planned,
+    });
+  }
+  return saved;
 }
 
 export function clearPendingSession() {
