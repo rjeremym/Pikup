@@ -113,3 +113,10 @@ export function exampleNotes(now = Date.now()): Session[] {
     note(34, 19, 30, "Backend", "Created the database schema", "Write GET /trails"),
   ];
 }
+
+/** Deep-work seconds across the example notes from the past seven days. */
+export function exampleWeekSeconds(now = Date.now()): number {
+  return exampleNotes(now)
+    .filter((n) => n.start >= now - 7 * DAY)
+    .reduce((acc, n) => acc + n.durationSec, 0);
+}
