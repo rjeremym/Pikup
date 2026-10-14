@@ -74,7 +74,12 @@ export function SessionNoteForm({
               <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                 Last time you planned
               </p>
-              <p className="hand text-2xl leading-snug [overflow-wrap:anywhere]">{planned}</p>
+              <p
+                className="hand text-2xl leading-snug [overflow-wrap:anywhere]"
+                data-clarity-mask="true"
+              >
+                {planned}
+              </p>
             </div>
             <div className="mt-5 grid gap-3 sm:grid-cols-3">
               {OUTCOMES.map((o) => {
@@ -154,6 +159,7 @@ export function SessionNoteForm({
                 }}
                 aria-pressed={nextThing === item.title}
                 className="sketch-chip max-w-full text-left [overflow-wrap:anywhere]"
+                data-clarity-mask="true"
               >
                 {item.title}
               </button>
@@ -166,7 +172,7 @@ export function SessionNoteForm({
           <p className="text-sm text-muted-foreground">
             <span className="font-semibold">Topic</span> (optional) · helps you find this note later
           </p>
-          <div className="mt-2 flex flex-wrap gap-2">
+          <div className="mt-2 flex flex-wrap gap-2" data-clarity-mask="true">
             {topics.map((t) => (
               <button
                 key={t}

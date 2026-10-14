@@ -204,6 +204,7 @@ function NotesPage() {
               aria-pressed={topic === t}
               onClick={() => setTopic(topic === t ? null : t)}
               className="sketch-chip"
+              data-clarity-mask="true"
             >
               {t}
             </button>
@@ -291,24 +292,27 @@ function NoteCard({
             type="button"
             onClick={() => onTopic(note.topic!)}
             className="sketch-chip ml-auto text-xs"
-            title={`Show only ${note.topic} notes`}
+            title="Show only notes with this topic"
+            data-clarity-mask="true"
           >
             #{note.topic}
           </button>
         )}
       </div>
-      {note.workedOn && (
-        <p className="mt-2">
-          <span className="font-semibold">{workedOnLabel(note)}: </span>
-          <Highlight text={note.workedOn} query={query} />
-        </p>
-      )}
-      {note.nextThing && (
-        <p className="mt-1">
-          <span className="font-semibold">Next up: </span>
-          <Highlight text={note.nextThing} query={query} />
-        </p>
-      )}
+      <div data-clarity-mask="true">
+        {note.workedOn && (
+          <p className="mt-2">
+            <span className="font-semibold">{workedOnLabel(note)}: </span>
+            <Highlight text={note.workedOn} query={query} />
+          </p>
+        )}
+        {note.nextThing && (
+          <p className="mt-1">
+            <span className="font-semibold">Next up: </span>
+            <Highlight text={note.nextThing} query={query} />
+          </p>
+        )}
+      </div>
     </li>
   );
 }

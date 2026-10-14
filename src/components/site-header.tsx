@@ -164,7 +164,11 @@ function AccountMenu() {
         {account ? <Avatar name={account.name} /> : <UserRound className="h-4 w-4" aria-hidden />}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="paper-card w-64 p-2">
-        {account && <p className="px-2 py-2 text-sm font-semibold">{account.name}</p>}
+        {account && (
+          <p className="px-2 py-2 text-sm font-semibold" data-clarity-mask="true">
+            {account.name}
+          </p>
+        )}
         <DropdownMenuItem asChild>
           <Link to="/account">Account</Link>
         </DropdownMenuItem>
@@ -202,6 +206,7 @@ export function Avatar({ name, className }: { name: string; className?: string }
         className,
       )}
       aria-hidden
+      data-clarity-mask="true"
     >
       {name.trim().charAt(0).toUpperCase() || "?"}
     </span>
@@ -228,7 +233,13 @@ function MobileMenu({ active }: { active: string | undefined }) {
       >
         <SheetTitle className="hand text-3xl font-normal text-primary">Pikup</SheetTitle>
         <SheetDescription>
-          {account ? `Logged in as ${account.name}.` : "Where to next?"}
+          {account ? (
+            <>
+              Logged in as <span data-clarity-mask="true">{account.name}</span>.
+            </>
+          ) : (
+            "Where to next?"
+          )}
         </SheetDescription>
         <nav aria-label="Mobile navigation" className="mt-6 space-y-2">
           {PRIMARY_NAV.map((page, index) => (

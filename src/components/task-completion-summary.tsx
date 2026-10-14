@@ -168,7 +168,10 @@ function WeeklySessionRow({ session }: { session: Session }) {
           {date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
         </span>
       </time>
-      <p className="order-3 col-span-2 min-w-0 font-semibold break-words md:order-2 md:col-span-1">
+      <p
+        className="order-3 col-span-2 min-w-0 font-semibold break-words md:order-2 md:col-span-1"
+        data-clarity-mask="true"
+      >
         <span className="sr-only">Planned task: </span>
         {task || "No planned task recorded"}
       </p>

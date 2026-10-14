@@ -61,8 +61,11 @@ function SignInPage() {
     >
       {account && (
         <Notice className="mb-6">
-          You're already logged in as <strong className="text-foreground">{account.email}</strong>.
-          Logging in again switches accounts.
+          You're already logged in as{" "}
+          <strong className="text-foreground" data-clarity-mask="true">
+            {account.email}
+          </strong>
+          . Logging in again switches accounts.
         </Notice>
       )}
 
