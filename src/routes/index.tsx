@@ -154,7 +154,8 @@ function Landing() {
       </section>
 
       <footer className="border-t-2 border-dashed border-pencil/30 py-6 text-center text-sm text-muted-foreground">
-        Pikup · low-fidelity prototype · your data stays in this browser ·{" "}
+        Pikup · low-fidelity prototype · your notes stay in this browser · clicks and scrolling are
+        recorded with Microsoft Clarity ·{" "}
         <button
           type="button"
           onClick={openPrototypeIntro}
@@ -224,7 +225,7 @@ function LastNotePreview() {
       {preview && (
         <>
           {note ? (
-            <div className="mt-2 space-y-1.5 text-sm">
+            <div className="mt-2 space-y-1.5 text-sm" data-clarity-mask="true">
               {note.workedOn && (
                 <p>
                   <span className="font-semibold">{workedOnLabel(note)}: </span>
@@ -263,7 +264,9 @@ function LastNotePreview() {
               <BACKLOG_ICON className="mt-0.5 h-4 w-4 shrink-0 text-pencil" aria-hidden />
               <span>
                 <span className="font-semibold">From your backlog: </span>
-                {preview.queued ?? (
+                {preview.queued ? (
+                  <span data-clarity-mask="true">{preview.queued}</span>
+                ) : (
                   <span className="text-muted-foreground italic">nothing else queued</span>
                 )}
               </span>

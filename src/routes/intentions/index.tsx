@@ -77,7 +77,7 @@ function IntentionsHub() {
             Up next · {upNext.length}/{UP_NEXT_LIMIT}
           </p>
           {upNext.length ? (
-            <ul className="mt-1 list-inside list-disc text-sm">
+            <ul className="mt-1 list-inside list-disc text-sm" data-clarity-mask="true">
               {upNext.map((i) => (
                 <li key={i.id} className="truncate">
                   {i.title}
@@ -100,7 +100,7 @@ function IntentionsHub() {
             {latest?.nextThing ? (
               <>
                 <span className="font-semibold">Latest next up: </span>
-                {latest.nextThing}
+                <span data-clarity-mask="true">{latest.nextThing}</span>
               </>
             ) : (
               <span className="text-muted-foreground italic">

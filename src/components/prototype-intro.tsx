@@ -5,7 +5,8 @@ import { readJSON, writeJSON } from "@/lib/storage";
 import { getPendingSession } from "@/lib/tracker";
 import { PROTOTYPE_INTRO_EVENT } from "@/lib/prototype-intro";
 
-const SEEN_KEY = "pikup.prototypeIntroSeen";
+/** Bump the version when the notice changes, so everyone sees the new wording once. */
+const SEEN_KEY = "pikup.prototypeIntroSeen.v2";
 
 const GOAL_STEPS = [
   "Look over your backlog and pick something to work on.",
@@ -43,8 +44,9 @@ export function PrototypeIntro() {
         </DialogTitle>
         <DialogDescription>
           This is an early, low-fidelity prototype. We’re testing the idea and how the pages flow
-          together, so some parts aren’t meant to look finished yet. Nothing you enter leaves this
-          browser.
+          together, so some parts aren’t meant to look finished yet. Your notes and tasks are only
+          saved in this browser. To improve the prototype, Microsoft Clarity records how you click
+          and scroll, with the text you type hidden.
         </DialogDescription>
         <div className="space-y-4 rounded-xl border-2 border-dashed border-pencil/40 bg-muted/60 p-5 text-sm">
           <div>

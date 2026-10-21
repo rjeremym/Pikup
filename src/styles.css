@@ -123,6 +123,32 @@
     @apply font-hand flex flex-col items-center justify-center gap-1 rounded-2xl border-2 border-pencil bg-card px-3 py-3 text-center text-xl leading-tight text-foreground shadow-[2px_3px_0_oklch(0.5_0.02_60/0.25)] transition-transform hover:-translate-y-0.5 aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:shadow-[3px_4px_0_oklch(0.35_0.05_50/0.5)];
   }
 
+  /* "Completed" goes green using the app's own accent tokens (same greens as the
+     success notice and the "Up next" tape), not the shared brown selected state */
+  .sketch-option-done[aria-pressed="true"] {
+    background: var(--color-accent);
+    border-color: var(--color-accent-foreground);
+    color: var(--color-accent-foreground);
+    box-shadow: 3px 4px 0 color-mix(in oklch, var(--color-accent-foreground) 35%, transparent);
+  }
+
+  /* mirrors a backlog item row (see intentions/backlog), so items picked here
+     look like the items on the backlog page */
+  .item-row {
+    @apply flex w-full items-start gap-3 rounded-xl border-2 border-pencil/30 bg-card px-3 py-2.5 text-left transition-shadow;
+  }
+
+  /* same highlight the backlog page uses for a freshly added item */
+  .item-row-selected {
+    border-color: color-mix(in oklch, var(--color-accent-foreground) 50%, transparent);
+    box-shadow: 0 0 0 4px color-mix(in oklch, var(--color-accent) 40%, transparent);
+  }
+
+  /* quieter than .sketch-chip, for optional extras that shouldn't compete */
+  .sketch-chip-quiet {
+    @apply inline-flex items-center gap-1 rounded-full border border-dashed border-pencil/40 bg-transparent px-2.5 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground aria-pressed:border-solid aria-pressed:border-accent-foreground/60 aria-pressed:bg-accent/30 aria-pressed:text-foreground;
+  }
+
   .sticky-note {
     @apply relative inline-block max-w-full -rotate-1 rounded-sm bg-washi px-5 pt-5 pb-3 shadow-[2px_4px_0_oklch(0.5_0.02_60/0.2)];
   }

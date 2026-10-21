@@ -178,9 +178,9 @@ export function AuthCard({
 export function PrototypeNotice({ className }: { className?: string }) {
   return (
     <Notice className={className}>
-      <strong className="text-foreground">Prototype:</strong> there are no real accounts yet.
-      Nothing you type here leaves this browser, and passwords are never saved, so please don't use
-      a real one.
+      <strong className="text-foreground">Prototype:</strong> there are no real accounts yet. What
+      you type here stays in this browser and is hidden from our Microsoft Clarity recordings.
+      Passwords are never saved, so please don&apos;t use a real one.
     </Notice>
   );
 }

@@ -162,14 +162,14 @@ function GoalsPage() {
 
           {added.length > 0 && !removed && (
             <Notice tone="success" className="mt-4">
-              Added “{added[added.length - 1]}”. Add as many as you like, then break them into
-              backlog items.
+              Added “<span data-clarity-mask="true">{added[added.length - 1]}</span>”. Add as many
+              as you like, then break them into backlog items.
             </Notice>
           )}
 
           {removed && (
             <Notice className="mt-4">
-              Removed “{removed.goal.title}”.{" "}
+              Removed “<span data-clarity-mask="true">{removed.goal.title}</span>”.{" "}
               <button
                 type="button"
                 onClick={undo}
@@ -290,6 +290,7 @@ function GoalRow({
 }) {
   const overdue = !goal.done && goal.due !== undefined && goal.due < todayISO();
   const checkboxId = `goal-${goal.id}`;
+  const titleId = `${checkboxId}-title`;
   return (
     <li className="flex items-center gap-3 rounded-xl border-2 border-dashed border-pencil/40 bg-card px-3 py-2">
       <input
@@ -300,8 +301,10 @@ function GoalRow({
         className="h-5 w-5 shrink-0 accent-primary"
       />
       <label
+        id={titleId}
         htmlFor={checkboxId}
         className={cn("flex-1 cursor-pointer", goal.done && "text-muted-foreground line-through")}
+        data-clarity-mask="true"
       >
         {goal.title}
       </label>
@@ -320,7 +323,8 @@ function GoalRow({
       <button
         type="button"
         onClick={() => onRemove(goal.id)}
-        aria-label={`Delete “${goal.title}”`}
+        aria-label="Delete goal"
+        aria-describedby={titleId}
         title="Delete"
         className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
       >

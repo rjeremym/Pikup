@@ -58,7 +58,9 @@ function MomentumHub() {
           <p className="mt-2 text-sm">
             <span className="font-semibold">Next up: </span>
             {note?.nextThing ? (
-              <span className="scribble-underline">{note.nextThing}</span>
+              <span className="scribble-underline" data-clarity-mask="true">
+                {note.nextThing}
+              </span>
             ) : (
               <span className="text-muted-foreground italic">no note yet</span>
             )}

@@ -211,14 +211,14 @@ function BacklogPage() {
 
       {added && !removed && (
         <Notice tone="success" className="mt-4">
-          Added “{added.title}” to Later. Add anything else you want, then head back to your weekly
-          summary.
+          Added “<span data-clarity-mask="true">{added.title}</span>” to Later. Add anything else
+          you want, then head back to your weekly summary.
         </Notice>
       )}
 
       {removed && (
         <Notice className="mt-4">
-          Deleted “{removed.item.title}”.{" "}
+          Deleted “<span data-clarity-mask="true">{removed.item.title}</span>”.{" "}
           <button
             type="button"
             onClick={undo}
@@ -328,6 +328,7 @@ function ItemRow({
 }) {
   const done = item.lane === "done";
   const checkboxId = `item-${item.id}`;
+  const titleId = `${checkboxId}-title`;
   return (
     <li
       className={cn(
@@ -342,8 +343,9 @@ function ItemRow({
         onChange={() => onMove(item.id, done ? "later" : "done")}
         className="mt-1 h-5 w-5 shrink-0 accent-primary"
       />
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1" data-clarity-mask="true">
         <label
+          id={titleId}
           htmlFor={checkboxId}
           className={cn(
             "cursor-pointer leading-snug break-words",
@@ -384,7 +386,7 @@ function ItemRow({
           )}
         </div>
       )}
-      <IconButton label={`Delete “${item.title}”`} onClick={() => onRemove(item.id)}>
+      <IconButton label="Delete item" describedBy={titleId} onClick={() => onRemove(item.id)}>
         <Trash2 className="h-4 w-4" />
       </IconButton>
     </li>
@@ -393,11 +395,14 @@ function ItemRow({
 
 function IconButton({
   label,
+  describedBy,
   onClick,
   disabled,
   children,
 }: {
   label: string;
+  /** id of the text this acts on, so screen readers hear which item without it being in the label */
+  describedBy?: string;
   onClick: () => void;
   disabled?: boolean;
   children: ReactNode;
@@ -408,6 +413,7 @@ function IconButton({
       onClick={onClick}
       disabled={disabled}
       aria-label={label}
+      aria-describedby={describedBy}
       title={label}
       className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
     >

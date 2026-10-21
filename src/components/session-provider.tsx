@@ -287,7 +287,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
               </div>
             )}
             {reminder && !welcomeOpen && (
-              <div className="space-y-4 rounded-xl border-2 border-dashed border-pencil/40 bg-muted/60 p-5">
+              <div
+                className="space-y-4 rounded-xl border-2 border-dashed border-pencil/40 bg-muted/60 p-5"
+                data-clarity-mask="true"
+              >
                 {reminder?.workedOn && (
                   <p className="break-words">
                     <span className="mb-1 block text-sm font-semibold text-muted-foreground">

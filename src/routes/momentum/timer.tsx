@@ -85,7 +85,7 @@ function TimerPage() {
               Last time, you left yourself this note:
             </p>
             {hasNote ? (
-              <>
+              <div data-clarity-mask="true">
                 {note?.workedOn && (
                   <p className="mt-3 text-base sm:text-lg">
                     <span className="font-semibold">{workedOnLabel(note)}: </span>
@@ -98,7 +98,7 @@ function TimerPage() {
                     <span className="scribble-underline">{note.nextThing}</span>
                   </p>
                 )}
-              </>
+              </div>
             ) : (
               <div className="mt-3 space-y-2 opacity-60">
                 <p className="text-base italic text-muted-foreground sm:text-lg">

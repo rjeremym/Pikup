@@ -46,7 +46,7 @@ function AccountHub() {
       title="Your account"
       lead="You're logged in. Your sessions, goals and notes follow you."
     >
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4" data-clarity-mask="true">
         <Avatar name={account.name} className="h-14 w-14 text-2xl" />
         <div className="min-w-0">
           <h2 className="hand truncate text-3xl">{account.name}</h2>

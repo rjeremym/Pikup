@@ -11,6 +11,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { CLARITY_SCRIPT } from "../lib/analytics";
 import { SiteHeader } from "@/components/site-header";
 import { SessionProvider } from "@/components/session-provider";
 import { PrototypeIntro } from "@/components/prototype-intro";
@@ -103,6 +104,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: "https://fonts.googleapis.com/css2?family=Darumadrop+One&family=Nunito:wght@400;600;800&display=swap",
       },
     ],
+    // Microsoft Clarity, on the live site only (see lib/analytics)
+    scripts: import.meta.env.PROD ? [{ children: CLARITY_SCRIPT }] : [],
   }),
   shellComponent: RootShell,
   component: RootComponent,
