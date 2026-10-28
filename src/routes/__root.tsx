@@ -14,7 +14,8 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { CLARITY_SCRIPT, UXTWEAK_SCRIPT } from "../lib/analytics";
 import { SiteHeader } from "@/components/site-header";
 import { SessionProvider } from "@/components/session-provider";
-import { PrototypeIntro } from "@/components/prototype-intro";
+// The first-visit prototype popup is turned off for the user study
+// import { PrototypeIntro } from "@/components/prototype-intro";
 
 function NotFoundComponent() {
   return (
@@ -140,7 +141,7 @@ function RootComponent() {
         <SiteHeader />
         {/* Required: nested routes render here. */}
         <Outlet />
-        <PrototypeIntro />
+        {/* <PrototypeIntro /> */}
       </SessionProvider>
     </QueryClientProvider>
   );

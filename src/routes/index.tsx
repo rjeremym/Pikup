@@ -19,7 +19,7 @@ import { exampleNotes, exampleWeekSeconds } from "@/lib/examples";
 import { PageLinkContent } from "@/components/site-header";
 import { Meter } from "@/components/section-layout";
 import { cn } from "@/lib/utils";
-import { openPrototypeIntro } from "@/lib/prototype-intro";
+// import { openPrototypeIntro } from "@/lib/prototype-intro";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -142,14 +142,16 @@ function Landing() {
 
       <footer className="border-t-2 border-dashed border-pencil/30 py-6 text-center text-sm text-muted-foreground">
         Pikup · low-fidelity prototype · your notes stay in this browser · clicks and scrolling are
-        recorded with Microsoft Clarity ·{" "}
+        recorded with Microsoft Clarity
+        {/* The prototype intro popup is turned off (see __root.tsx), so this link has nothing to open
+        ·{" "}
         <button
           type="button"
           onClick={openPrototypeIntro}
           className="font-semibold underline decoration-dotted underline-offset-4 hover:text-foreground"
         >
           show the intro again
-        </button>
+        </button> */}
       </footer>
     </main>
   );
