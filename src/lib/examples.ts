@@ -2,10 +2,10 @@ import type { Session } from "./tracker";
 import type { BacklogItem, Goal } from "./intentions";
 
 /*
- * Sample content for the prototype, all about one imaginary hobby project ("a trail-log web app"),
- * so first-time visitors see what each page is for instead of a blank screen.
- * Goals and backlog are seeded once and then belong to the user; example notes are only shown
- * (never saved) until the user writes their own, so they can't skew the weekly stats.
+ * Sample content for the prototype, so first-time visitors see what each page is for instead of a
+ * blank screen. Goals and backlog (about "a trail-log web app") are seeded once and then belong to
+ * the user. A short session history is seeded the same way for the user study (see
+ * exampleSessions); example notes are only shown, never saved, if there are no notes at all.
  */
 
 const DAY = 24 * 3600 * 1000;
@@ -112,6 +112,67 @@ export function exampleNotes(now = Date.now()): Session[] {
     ),
     note(34, 19, 30, "Backend", "Created the database schema", "Write GET /trails"),
   ];
+}
+
+/** The most recent Monday before today, at 9pm (on a Monday, the one a week ago). */
+function lastMondayNight(now: Date): Date {
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - ((now.getDay() + 6) % 7 || 7));
+  monday.setHours(21, 0, 0, 0);
+  return monday;
+}
+
+/**
+ * Saved on a tester's first visit so the user study starts mid-project, not on empty states: a few
+ * earlier sessions, then last Monday night, partway through a login feature. That Monday note is
+ * the one Pikup brings back when the tester picks up where they left off.
+ */
+export function exampleSessions(now = new Date()): Session[] {
+  const monday = lastMondayNight(now).getTime();
+  const session = (
+    daysBeforeMonday: number,
+    hour: number,
+    minutes: number,
+    topic: string,
+    workedOn: string,
+    nextThing: string,
+  ): Session => {
+    const day = new Date(monday - daysBeforeMonday * DAY);
+    day.setHours(hour, 0, 0, 0);
+    const start = day.getTime();
+    return {
+      id: `seed-${daysBeforeMonday}`,
+      start,
+      end: start + minutes * 60 * 1000,
+      durationSec: minutes * 60,
+      topic,
+      workedOn,
+      nextThing,
+    };
+  };
+  // oldest first: the last one is the note Pikup shows as "where you left off"
+  const sessions = [
+    session(
+      12,
+      20,
+      45,
+      "Frontend",
+      "Set up the project and the page layout",
+      "Build the sign-up page",
+    ),
+    session(9, 14, 70, "Frontend", "Built the sign-up page", "Save new users to the database"),
+    session(5, 20, 55, "Backend", "Saved new users to the database", "Build the login form"),
+    session(
+      0,
+      21,
+      80,
+      "Frontend",
+      "Built the login form, but it isn't connected to anything yet.",
+      "Connect the login form to the API and show an error for a wrong password.",
+    ),
+  ];
+  // each session planned whatever the one before it left as "next up"
+  return sessions.map((s, i) => (i ? { ...s, plannedTask: sessions[i - 1]!.nextThing } : s));
 }
 
 /** Deep-work seconds across the example notes from the past seven days. */

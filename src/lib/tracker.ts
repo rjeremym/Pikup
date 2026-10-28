@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { exampleSessions } from "./examples";
 
 export interface Session {
   id: string;
@@ -109,7 +110,14 @@ function read<T>(key: string, fallback: T): T {
 }
 
 export function getSessions(): Session[] {
-  return read<Session[]>(SESSIONS_KEY, []);
+  const saved = read<Session[] | null>(SESSIONS_KEY, null);
+  if (saved) return saved;
+  // First visit: store the study's session history so it behaves like the user's own from then on
+  const seeded = exampleSessions();
+  if (typeof localStorage !== "undefined") {
+    localStorage.setItem(SESSIONS_KEY, JSON.stringify(seeded));
+  }
+  return seeded;
 }
 
 export function saveSession(s: Session) {
