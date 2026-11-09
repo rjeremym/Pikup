@@ -1,6 +1,7 @@
 import { useSessionRevision } from "@/lib/session-context";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { usePostHog } from "posthog-js/react";
 import { ChevronUp, Plus, Trash2, Undo2, X } from "lucide-react";
 import { NextStepLink, PageHeader } from "@/components/section-layout";
 import { Notice } from "@/components/form-bits";
@@ -30,6 +31,7 @@ export const Route = createFileRoute("/intentions/backlog")({
 });
 
 function BacklogPage() {
+  const posthog = usePostHog();
   const revision = useSessionRevision();
   const [items, setItems] = useState<BacklogItem[] | null>(null);
   const [title, setTitle] = useState("");
@@ -72,6 +74,7 @@ function BacklogPage() {
       lane: "later",
     };
     commit([...items, item]);
+    posthog.capture("backlog_item_created", { has_topic: Boolean(itemTopic) });
     setTitle("");
     setJustAdded(item.id);
     setRemoved(null);
@@ -82,6 +85,14 @@ function BacklogPage() {
     if (!items) return;
     const item = items.find((i) => i.id === id)!;
     commit([...items.filter((i) => i.id !== id), { ...item, lane: to }]);
+    if (to === "next") {
+      posthog.capture("backlog_item_prioritized", { from_lane: item.lane });
+    } else if (to === "done") {
+      posthog.capture("backlog_item_completed", {
+        from_lane: item.lane,
+        has_topic: Boolean(item.topic),
+      });
+    }
   };
 
   /** swap with the item above it in the same lane */

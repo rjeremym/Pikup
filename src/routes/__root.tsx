@@ -7,13 +7,15 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
+import { PostHogProvider, usePostHog } from "posthog-js/react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { CLARITY_SCRIPT, UXTWEAK_SCRIPT } from "../lib/analytics";
 import { SiteHeader } from "@/components/site-header";
 import { SessionProvider } from "@/components/session-provider";
+import { useAccount } from "@/lib/account";
 // The first-visit prototype popup is turned off for the user study
 // import { PrototypeIntro } from "@/components/prototype-intro";
 
@@ -39,9 +41,11 @@ function NotFoundComponent() {
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
+  const posthog = usePostHog();
   useEffect(() => {
+    posthog.captureException(error);
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
-  }, [error]);
+  }, [error, posthog]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -125,16 +129,76 @@ function RootShell({ children }: { children: ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        {children}
+        <PostHogRoot>{children}</PostHogRoot>
         <Scripts />
       </body>
     </html>
   );
 }
 
+function PostHogRoot({ children }: { children: ReactNode }) {
+  const apiKey = import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN;
+  const apiHost = import.meta.env.VITE_PUBLIC_POSTHOG_HOST;
+
+  if (!apiKey || !apiHost) {
+    if (import.meta.env.DEV && typeof window !== "undefined") {
+      const missingVariable = !apiKey
+        ? "VITE_PUBLIC_POSTHOG_PROJECT_TOKEN"
+        : "VITE_PUBLIC_POSTHOG_HOST";
+      throw new Error(
+        `${missingVariable} variable required by PostHog is missing or un-configured, this causes events to be silently missed. This error stops appearing once ${missingVariable} is configured`,
+      );
+    }
+
+    return children;
+  }
+
+  return (
+    <PostHogProvider
+      apiKey={apiKey}
+      options={{
+        api_host: apiHost,
+        defaults: "2025-05-24",
+        capture_exceptions: true,
+        debug: import.meta.env.DEV,
+        logs: {
+          serviceName: "pikup-web",
+          environment: import.meta.env.MODE,
+        },
+      }}
+    >
+      <PostHogIdentity />
+      {children}
+    </PostHogProvider>
+  );
+}
+
+function PostHogIdentity() {
+  const account = useAccount();
+  const posthog = usePostHog();
+  const previousEmail = useRef<string | null | undefined>(undefined);
+
+  useEffect(() => {
+    // This prototype has no account primary key, so email is its only available
+    // stable identifier. Keep PII on the person record rather than event properties.
+    const email = account?.email.toLowerCase() ?? null;
+    if (previousEmail.current === email) return;
+
+    if (email) {
+      if (previousEmail.current && posthog.get_distinct_id() !== email) posthog.reset();
+      posthog.identify(email, { email: account.email, name: account.name });
+    } else if (previousEmail.current) {
+      posthog.reset();
+    }
+
+    previousEmail.current = email;
+  }, [account, posthog]);
+
+  return null;
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-
   return (
     <QueryClientProvider client={queryClient}>
       <SessionProvider>
