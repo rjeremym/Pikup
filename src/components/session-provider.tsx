@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
+import { usePostHog } from "posthog-js/react";
 import { ArrowRight, NotebookPen, Pause, Timer } from "lucide-react";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
@@ -36,6 +37,7 @@ const FIRST_SESSION_WELCOME_KEY = "pikup.firstSessionWelcomeSeen";
 const emptyDraft = (): SessionNoteDraft => ({ workedOn: "", nextThing: "" });
 
 export function SessionProvider({ children }: { children: ReactNode }) {
+  const posthog = usePostHog();
   const timer = useTimer();
   const [ready, setReady] = useState(false);
   const [pending, setPending] = useState<PendingSession | null>(null);
@@ -90,6 +92,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     const previous = lastNote();
     const showWelcome = readJSON<boolean>(FIRST_SESSION_WELCOME_KEY, () => false) !== true;
     timer.start();
+    posthog.capture("focus_session_started");
+    posthog.logger.info("focus session started", { first_session: showWelcome });
     if (showWelcome) writeJSON(FIRST_SESSION_WELCOME_KEY, true);
     setWelcomeOpen(showWelcome);
     setReminder(previous ?? null);
@@ -192,6 +196,18 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         : outcome
           ? "Session outcome saved."
           : "Session saved without a note.";
+    posthog.capture("focus_session_completed", {
+      duration_seconds: pending.elapsed,
+      note_saved: Boolean(workedOn || nextThing),
+      outcome: outcome ?? "unrecorded",
+      planned_task_present: Boolean(pending.planned),
+    });
+    posthog.logger.info("focus session completed", {
+      duration_seconds: pending.elapsed,
+      note_saved: Boolean(workedOn || nextThing),
+      outcome: outcome ?? "unrecorded",
+      planned_task_present: Boolean(pending.planned),
+    });
     setFeedback(message);
     toast.success(message);
     navigate({ to: "/momentum/stats" });

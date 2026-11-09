@@ -1,6 +1,7 @@
 import { useSessionRevision } from "@/lib/session-context";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
+import { usePostHog } from "posthog-js/react";
 import { ArrowRight, CalendarClock, Minus, Plus, Trash2, Undo2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { Meter, NextStepLink, PageHeader } from "@/components/section-layout";
@@ -37,6 +38,7 @@ function todayISO() {
 }
 
 function GoalsPage() {
+  const posthog = usePostHog();
   const revision = useSessionRevision();
   const [target, setTarget] = useState(6);
   const [week, setWeek] = useState({ seconds: 0, avg: 0 });
@@ -71,14 +73,19 @@ function GoalsPage() {
     const t = title.trim();
     if (!t || !goals) return;
     commit([...goals, { id: crypto.randomUUID(), title: t, due: due || undefined, done: false }]);
+    posthog.capture("goal_created", { has_target_date: Boolean(due) });
     setTitle("");
     setDue("");
     setRemoved(null);
     setAdded([...added, t]);
   };
 
-  const toggle = (id: string) =>
-    goals && commit(goals.map((g) => (g.id === id ? { ...g, done: !g.done } : g)));
+  const toggle = (id: string) => {
+    const goal = goals?.find((item) => item.id === id);
+    if (!goals || !goal) return;
+    commit(goals.map((item) => (item.id === id ? { ...item, done: !item.done } : item)));
+    if (!goal.done) posthog.capture("goal_completed", { has_target_date: Boolean(goal.due) });
+  };
 
   const remove = (id: string) => {
     if (!goals) return;

@@ -1,9 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
+import { usePostHog } from "posthog-js/react";
 import { UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { AuthCard, Checklist, PasswordField, TextField } from "@/components/form-bits";
-import { EMAIL_PATTERN, createAccount, passwordChecks } from "@/lib/account";
+import { EMAIL_PATTERN, createAccount, passwordChecks, useAccount } from "@/lib/account";
 
 export const Route = createFileRoute("/account/create")({
   head: () => ({
@@ -17,6 +18,8 @@ export const Route = createFileRoute("/account/create")({
 
 function CreateAccountPage() {
   const navigate = useNavigate();
+  const posthog = usePostHog();
+  const account = useAccount();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -42,7 +45,12 @@ function CreateAccountPage() {
     e.preventDefault();
     setSubmitted(true);
     if (Object.values(errors).some(Boolean)) return;
-    createAccount({ name: name.trim(), email: email.trim() });
+    const nextAccount = { name: name.trim(), email: email.trim() };
+    const distinctId = nextAccount.email.toLowerCase();
+    if (account && account.email.toLowerCase() !== distinctId) posthog.reset();
+    posthog.identify(distinctId, nextAccount);
+    createAccount(nextAccount);
+    posthog.capture("account_created");
     toast.success("Account created. Your data is saved to your account.");
     // happy path: back to the summary, where setting goals is the next step
     navigate({ to: "/momentum/stats" });

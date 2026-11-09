@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
+import { usePostHog } from "posthog-js/react";
 import { LogIn } from "lucide-react";
 import { toast } from "sonner";
 import { AuthCard, Notice, PasswordField, TextField } from "@/components/form-bits";
@@ -17,6 +18,7 @@ export const Route = createFileRoute("/account/sign-in")({
 
 function SignInPage() {
   const navigate = useNavigate();
+  const posthog = usePostHog();
   const account = useAccount();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -37,7 +39,11 @@ function SignInPage() {
     e.preventDefault();
     setSubmitted(true);
     if (errors.email || errors.password) return;
+    const distinctId = email.trim().toLowerCase();
+    if (account && account.email.toLowerCase() !== distinctId) posthog.reset();
+    posthog.identify(distinctId, { email: email.trim() });
     signIn(email.trim());
+    posthog.capture("account_signed_in");
     toast.success("You're logged in. Your data is saved to your account.");
     // happy path: back to the summary, where setting goals is the next step
     navigate({ to: "/momentum/stats" });
