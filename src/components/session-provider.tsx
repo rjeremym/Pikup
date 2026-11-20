@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { ArrowRight, NotebookPen, Pause, Timer } from "lucide-react";
+import { ArrowRight, CalendarDays, NotebookPen, Pause, Timer } from "lucide-react";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import {
@@ -20,6 +20,7 @@ import {
 } from "@/lib/tracker";
 import { getBacklog, saveBacklog } from "@/lib/intentions";
 import { readJSON, writeJSON } from "@/lib/storage";
+import { celebrateSave } from "@/lib/confetti";
 import { SessionContext, SessionRevisionContext } from "@/lib/session-context";
 import { SessionNoteForm } from "@/components/session-note-form";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -32,6 +33,8 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const FIRST_SESSION_WELCOME_KEY = "pikup.firstSessionWelcomeSeen";
+/** Shown once after the first session note is saved, to teach the "note next time" loop. */
+const FIRST_SAVE_INTRO_KEY = "pikup.firstSessionSaveSeen";
 
 const emptyDraft = (): SessionNoteDraft => ({ workedOn: "", nextThing: "" });
 
@@ -46,6 +49,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [noteError, setNoteError] = useState("");
   const [reminder, setReminder] = useState<Session | null>(null);
   const [welcomeOpen, setWelcomeOpen] = useState(false);
+  const [firstSaveOpen, setFirstSaveOpen] = useState(false);
   const [revision, setRevision] = useState(0);
   const [feedback, setFeedback] = useState("");
   const returnFocus = useRef<HTMLElement | null>(null);
@@ -186,14 +190,23 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setNoteError("");
     setConfirmClose(false);
     setNoteOpen(false);
-    const message =
-      workedOn || nextThing
-        ? "Session and note saved."
-        : outcome
-          ? "Session outcome saved."
-          : "Session saved without a note.";
+    const leftANote = Boolean(workedOn || nextThing);
+    const message = leftANote
+      ? "Session and note saved."
+      : outcome
+        ? "Session outcome saved."
+        : "Session saved without a note.";
     setFeedback(message);
     toast.success(message);
+    celebrateSave();
+
+    // First note-saving session: teach the loop before sending them anywhere.
+    const firstSave = leftANote && readJSON<boolean>(FIRST_SAVE_INTRO_KEY, () => false) !== true;
+    if (firstSave) {
+      writeJSON(FIRST_SAVE_INTRO_KEY, true);
+      setFirstSaveOpen(true);
+      return;
+    }
     navigate({ to: "/momentum/stats" });
   };
 
@@ -386,6 +399,54 @@ export function SessionProvider({ children }: { children: ReactNode }) {
                 </div>
               </AlertDialogContent>
             </AlertDialog>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={firstSaveOpen} onOpenChange={setFirstSaveOpen}>
+          <DialogContent className="paper-card max-h-[85dvh] w-[calc(100%-2rem)] max-w-lg overflow-y-auto p-6 sm:p-8">
+            <DialogTitle className="hand pr-5 text-3xl font-normal">
+              Nice — your note is saved
+            </DialogTitle>
+            <DialogDescription>
+              Next time you start a session, that note will be waiting so you can pick up exactly
+              where you left off.
+            </DialogDescription>
+            <div className="space-y-3 rounded-xl border-2 border-dashed border-pencil/40 bg-muted/60 p-5 text-sm">
+              <p className="flex gap-3">
+                <NotebookPen className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden />
+                <span>
+                  <strong>Your note is for future-you.</strong> Open Session later and the last
+                  thing you wrote is right there at the top.
+                </span>
+              </p>
+              <p className="flex gap-3">
+                <CalendarDays className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden />
+                <span>
+                  <strong>Weekly summary</strong> is a light look at your deep-work hours — handy
+                  when you want a sense of progress, optional when you don’t.
+                </span>
+              </p>
+            </div>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <button
+                type="button"
+                className="min-h-11 rounded-lg px-2 text-sm font-semibold text-muted-foreground underline decoration-dotted underline-offset-4 hover:text-foreground"
+                onClick={() => setFirstSaveOpen(false)}
+              >
+                Stay here
+              </button>
+              <button
+                type="button"
+                className="sketch-btn-primary min-h-11"
+                onClick={() => {
+                  setFirstSaveOpen(false);
+                  navigate({ to: "/momentum/stats" });
+                }}
+              >
+                <CalendarDays className="h-5 w-5" aria-hidden />
+                See weekly summary
+              </button>
+            </div>
           </DialogContent>
         </Dialog>
       </SessionRevisionContext.Provider>
