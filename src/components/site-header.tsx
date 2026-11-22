@@ -107,6 +107,9 @@ function SessionControls() {
             />
             {timer.paused && <span>Paused</span>}
             {fmtDuration(timer.elapsed)}
+            {timer.goalSec && (
+              <span className="font-normal text-muted-foreground">/ {timer.goalSec / 60}m</span>
+            )}
           </span>
           <button
             type="button"

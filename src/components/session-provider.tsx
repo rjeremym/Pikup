@@ -223,6 +223,26 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setConfirmClose(true);
   };
 
+  // The chosen focus length has run out: offer to wrap up (once), unless another popup is up
+  const timeUp =
+    timer.running &&
+    timer.goalSec != null &&
+    !timer.goalPrompted &&
+    timer.elapsed >= timer.goalSec &&
+    !pending &&
+    !welcomeOpen &&
+    !reminder;
+
+  // People are usually in their editor by then, so flag it in the tab title too
+  useEffect(() => {
+    if (!timeUp) return;
+    const title = document.title;
+    document.title = "Time’s up! · Pikup";
+    return () => {
+      document.title = title;
+    };
+  }, [timeUp]);
+
   const closeStartPopup = () => {
     setWelcomeOpen(false);
     setReminder(null);
@@ -365,6 +385,40 @@ export function SessionProvider({ children }: { children: ReactNode }) {
                 Got it — let’s work
               </button>
             )}
+          </DialogContent>
+        </Dialog>
+
+        <Dialog
+          open={timeUp}
+          onOpenChange={(open) => {
+            if (!open) timer.markGoalPrompted();
+          }}
+        >
+          <DialogContent className="paper-card max-h-[85dvh] w-[calc(100%-2rem)] max-w-lg overflow-y-auto p-6 sm:p-8">
+            <DialogTitle className="hand pr-5 text-3xl font-normal">
+              Time’s up — nice focus!
+            </DialogTitle>
+            <DialogDescription>
+              You’ve focused for {Math.round((timer.goalSec ?? 0) / 60)} minutes. Wrap up with a
+              note for next time, or keep going if you’re on a roll.
+            </DialogDescription>
+            <div className="flex flex-wrap-reverse items-center justify-end gap-3">
+              <button
+                type="button"
+                className="sketch-btn min-h-11 whitespace-nowrap"
+                onClick={timer.markGoalPrompted}
+              >
+                Keep going
+              </button>
+              <button
+                type="button"
+                className="sketch-btn-primary min-h-11 text-xl whitespace-nowrap"
+                onClick={endSession}
+              >
+                <NotebookPen className="h-5 w-5" aria-hidden />
+                Wrap up with a note
+              </button>
+            </div>
           </DialogContent>
         </Dialog>
 
