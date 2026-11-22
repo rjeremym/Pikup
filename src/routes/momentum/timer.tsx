@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Pause, Play, Square, Eye, EyeOff, NotebookPen } from "lucide-react";
+import { Pause, Play, Square, Eye, EyeOff, NotebookPen, Pencil } from "lucide-react";
 import {
   fmtDuration,
   lastNote,
@@ -10,6 +10,7 @@ import {
 } from "@/lib/tracker";
 import { useSessionControls, useSessionRevision } from "@/lib/session-context";
 import { STICKER_IMAGES } from "@/lib/stickers";
+import { NoteEditForm } from "@/components/note-edit-form";
 
 export const Route = createFileRoute("/momentum/timer")({
   head: () => ({
@@ -39,6 +40,7 @@ function TimerPage() {
   const [note, setNote] = useState<Session | undefined>();
   const [sticker, setSticker] = useState<string | null>(null);
   const [timerHidden, setTimerHidden] = useState(false);
+  const [editingNote, setEditingNote] = useState(false);
 
   useEffect(() => {
     setNote(lastNote());
@@ -84,21 +86,35 @@ function TimerPage() {
             <p className="hand text-2xl text-primary sm:text-3xl">
               Last time, you left yourself this note:
             </p>
-            {hasNote ? (
-              <div data-clarity-mask="true">
-                {note?.workedOn && (
-                  <p className="mt-3 text-base sm:text-lg">
-                    <span className="font-semibold">{workedOnLabel(note)}: </span>
-                    {note.workedOn}
-                  </p>
-                )}
-                {note?.nextThing && (
-                  <p className="mt-2 text-base sm:text-lg">
-                    <span className="font-semibold">Next up: </span>
-                    <span className="scribble-underline">{note.nextThing}</span>
-                  </p>
-                )}
+            {note && hasNote && editingNote ? (
+              <div className="mt-3">
+                <NoteEditForm note={note} onDone={() => setEditingNote(false)} />
               </div>
+            ) : note && hasNote ? (
+              <>
+                <div data-clarity-mask="true">
+                  {note.workedOn && (
+                    <p className="mt-3 text-base sm:text-lg">
+                      <span className="font-semibold">{workedOnLabel(note)}: </span>
+                      {note.workedOn}
+                    </p>
+                  )}
+                  {note.nextThing && (
+                    <p className="mt-2 text-base sm:text-lg">
+                      <span className="font-semibold">Next up: </span>
+                      <span className="scribble-underline">{note.nextThing}</span>
+                    </p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditingNote(true)}
+                  className="mt-2 inline-flex min-h-11 items-center gap-1.5 rounded-lg px-1 text-sm font-semibold text-primary underline decoration-dotted underline-offset-4 hover:text-foreground"
+                >
+                  <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  Edit note
+                </button>
+              </>
             ) : (
               <div className="mt-3 space-y-2 opacity-60">
                 <p className="text-base italic text-muted-foreground sm:text-lg">
