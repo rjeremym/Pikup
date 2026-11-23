@@ -180,7 +180,7 @@ function StatsPage() {
           <p className="text-sm text-muted-foreground">
             Hit a weekly milestone to unlock a sticker — tap one to pin it on your timer.
           </p>
-          <div className="mt-4 grid max-w-xl grid-cols-5 gap-3">
+          <div className="mt-4 grid max-w-xl grid-cols-3 gap-3 sm:grid-cols-6">
             {MILESTONES.map((m) => {
               const has = unlocked.includes(m.sticker);
               const isPlaced = placed === m.sticker;
