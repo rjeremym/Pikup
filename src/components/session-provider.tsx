@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { ArrowRight, NotebookPen, Pause, Timer } from "lucide-react";
+import { ArrowRight, CalendarDays, NotebookPen, Pause, Pencil, Timer } from "lucide-react";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import {
@@ -20,8 +20,10 @@ import {
 } from "@/lib/tracker";
 import { getBacklog, saveBacklog } from "@/lib/intentions";
 import { readJSON, writeJSON } from "@/lib/storage";
+import { celebrateSave } from "@/lib/confetti";
 import { SessionContext, SessionRevisionContext } from "@/lib/session-context";
 import { SessionNoteForm } from "@/components/session-note-form";
+import { NoteEditForm } from "@/components/note-edit-form";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -32,6 +34,8 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const FIRST_SESSION_WELCOME_KEY = "pikup.firstSessionWelcomeSeen";
+/** Shown once after the first session note is saved, to teach the "note next time" loop. */
+const FIRST_SAVE_INTRO_KEY = "pikup.firstSessionSaveSeen";
 
 const emptyDraft = (): SessionNoteDraft => ({ workedOn: "", nextThing: "" });
 
@@ -46,6 +50,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [noteError, setNoteError] = useState("");
   const [reminder, setReminder] = useState<Session | null>(null);
   const [welcomeOpen, setWelcomeOpen] = useState(false);
+  const [editingReminder, setEditingReminder] = useState(false);
+  const [firstSaveOpen, setFirstSaveOpen] = useState(false);
   const [revision, setRevision] = useState(0);
   const [feedback, setFeedback] = useState("");
   const returnFocus = useRef<HTMLElement | null>(null);
@@ -93,6 +99,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     if (showWelcome) writeJSON(FIRST_SESSION_WELCOME_KEY, true);
     setWelcomeOpen(showWelcome);
     setReminder(previous ?? null);
+    setEditingReminder(false);
     setFeedback("Session started.");
     // Wherever a session is started from, running it happens on the session page.
     navigate({ to: "/momentum/timer" });
@@ -186,14 +193,23 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setNoteError("");
     setConfirmClose(false);
     setNoteOpen(false);
-    const message =
-      workedOn || nextThing
-        ? "Session and note saved."
-        : outcome
-          ? "Session outcome saved."
-          : "Session saved without a note.";
+    const leftANote = Boolean(workedOn || nextThing);
+    const message = leftANote
+      ? "Session and note saved."
+      : outcome
+        ? "Session outcome saved."
+        : "Session saved without a note.";
     setFeedback(message);
     toast.success(message);
+    celebrateSave();
+
+    // First note-saving session: teach the loop before sending them anywhere.
+    const firstSave = leftANote && readJSON<boolean>(FIRST_SAVE_INTRO_KEY, () => false) !== true;
+    if (firstSave) {
+      writeJSON(FIRST_SAVE_INTRO_KEY, true);
+      setFirstSaveOpen(true);
+      return;
+    }
     navigate({ to: "/momentum/stats" });
   };
 
@@ -205,6 +221,32 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     dismissFocus.current =
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setConfirmClose(true);
+  };
+
+  // The chosen focus length has run out: offer to wrap up (once), unless another popup is up
+  const timeUp =
+    timer.running &&
+    timer.goalSec != null &&
+    !timer.goalPrompted &&
+    timer.elapsed >= timer.goalSec &&
+    !pending &&
+    !welcomeOpen &&
+    !reminder;
+
+  // People are usually in their editor by then, so flag it in the tab title too
+  useEffect(() => {
+    if (!timeUp) return;
+    const title = document.title;
+    document.title = "Time’s up! · Pikup";
+    return () => {
+      document.title = title;
+    };
+  }, [timeUp]);
+
+  const closeStartPopup = () => {
+    setWelcomeOpen(false);
+    setReminder(null);
+    setEditingReminder(false);
   };
 
   const restoreFocus = (event: Event) => {
@@ -238,25 +280,72 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         <Dialog
           open={welcomeOpen || Boolean(reminder)}
           onOpenChange={(open) => {
-            if (!open) {
-              setWelcomeOpen(false);
-              setReminder(null);
-            }
+            if (!open) closeStartPopup();
           }}
         >
           <DialogContent
             className="paper-card max-h-[85dvh] w-[calc(100%-2rem)] max-w-lg overflow-y-auto p-6 sm:p-8"
             onCloseAutoFocus={restoreFocus}
           >
+            {/* The note always leads: in testing, a first-session tutorial covered it at the
+                exact moment people were trying to pick up where they left off. */}
             <DialogTitle className="hand pr-5 text-3xl font-normal">
-              {welcomeOpen ? "Congrats, you just started a session!" : "Pick up where you left off"}
+              {welcomeOpen && !reminder
+                ? "Congrats, you just started a session!"
+                : "Pick up where you left off"}
             </DialogTitle>
             <DialogDescription>
-              {welcomeOpen
+              {welcomeOpen && !reminder
                 ? "A session is time you set aside to focus on a task. Your timer is running now."
                 : "Your session has started. Here’s the note you left last time."}
             </DialogDescription>
-            {welcomeOpen && (
+            {reminder &&
+              (editingReminder ? (
+                <NoteEditForm
+                  note={reminder}
+                  onDone={() => {
+                    setReminder(lastNote() ?? reminder);
+                    setEditingReminder(false);
+                  }}
+                />
+              ) : (
+                <div className="rounded-xl border-2 border-dashed border-pencil/40 bg-muted/60 p-5">
+                  <div className="space-y-4" data-clarity-mask="true">
+                    {reminder.workedOn && (
+                      <p className="break-words">
+                        <span className="mb-1 block text-sm font-semibold text-muted-foreground">
+                          {workedOnLabel(reminder)}
+                        </span>
+                        {reminder.workedOn}
+                      </p>
+                    )}
+                    {reminder.nextThing && (
+                      <p className="break-words">
+                        <span className="mb-1 block text-sm font-semibold text-muted-foreground">
+                          Next up
+                        </span>
+                        <span className="scribble-underline">{reminder.nextThing}</span>
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setEditingReminder(true)}
+                    className="mt-3 inline-flex min-h-11 items-center gap-1.5 rounded-lg px-1 text-sm font-semibold text-primary underline decoration-dotted underline-offset-4 hover:text-foreground"
+                  >
+                    <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                    Edit note
+                  </button>
+                </div>
+              ))}
+            {reminder && welcomeOpen && !editingReminder && (
+              <p className="flex gap-2 text-sm text-muted-foreground">
+                <Timer className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
+                Your timer is running. Pause it anytime, and press End to leave a note for next
+                time.
+              </p>
+            )}
+            {welcomeOpen && !reminder && (
               <div className="space-y-4">
                 <ul className="space-y-3 text-sm">
                   <li className="flex gap-3">
@@ -286,40 +375,50 @@ export function SessionProvider({ children }: { children: ReactNode }) {
                 </p>
               </div>
             )}
-            {reminder && !welcomeOpen && (
-              <div
-                className="space-y-4 rounded-xl border-2 border-dashed border-pencil/40 bg-muted/60 p-5"
-                data-clarity-mask="true"
+            {!editingReminder && (
+              <button
+                type="button"
+                className="sketch-btn-primary justify-self-start"
+                onClick={closeStartPopup}
               >
-                {reminder?.workedOn && (
-                  <p className="break-words">
-                    <span className="mb-1 block text-sm font-semibold text-muted-foreground">
-                      {workedOnLabel(reminder)}
-                    </span>
-                    {reminder.workedOn}
-                  </p>
-                )}
-                {reminder?.nextThing && (
-                  <p className="break-words">
-                    <span className="mb-1 block text-sm font-semibold text-muted-foreground">
-                      Next up
-                    </span>
-                    <span className="scribble-underline">{reminder.nextThing}</span>
-                  </p>
-                )}
-              </div>
+                <ArrowRight className="h-5 w-5" aria-hidden />
+                Got it — let’s work
+              </button>
             )}
-            <button
-              type="button"
-              className="sketch-btn-primary justify-self-start"
-              onClick={() => {
-                setWelcomeOpen(false);
-                setReminder(null);
-              }}
-            >
-              <ArrowRight className="h-5 w-5" aria-hidden />
-              Got it — let’s work
-            </button>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog
+          open={timeUp}
+          onOpenChange={(open) => {
+            if (!open) timer.markGoalPrompted();
+          }}
+        >
+          <DialogContent className="paper-card max-h-[85dvh] w-[calc(100%-2rem)] max-w-lg overflow-y-auto p-6 sm:p-8">
+            <DialogTitle className="hand pr-5 text-3xl font-normal">
+              Time’s up — nice focus!
+            </DialogTitle>
+            <DialogDescription>
+              You’ve focused for {Math.round((timer.goalSec ?? 0) / 60)} minutes. Wrap up with a
+              note for next time, or keep going if you’re on a roll.
+            </DialogDescription>
+            <div className="flex flex-wrap-reverse items-center justify-end gap-3">
+              <button
+                type="button"
+                className="sketch-btn min-h-11 whitespace-nowrap"
+                onClick={timer.markGoalPrompted}
+              >
+                Keep going
+              </button>
+              <button
+                type="button"
+                className="sketch-btn-primary min-h-11 text-xl whitespace-nowrap"
+                onClick={endSession}
+              >
+                <NotebookPen className="h-5 w-5" aria-hidden />
+                Wrap up with a note
+              </button>
+            </div>
           </DialogContent>
         </Dialog>
 
@@ -386,6 +485,54 @@ export function SessionProvider({ children }: { children: ReactNode }) {
                 </div>
               </AlertDialogContent>
             </AlertDialog>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={firstSaveOpen} onOpenChange={setFirstSaveOpen}>
+          <DialogContent className="paper-card max-h-[85dvh] w-[calc(100%-2rem)] max-w-lg overflow-y-auto p-6 sm:p-8">
+            <DialogTitle className="hand pr-5 text-3xl font-normal">
+              Nice — your note is saved
+            </DialogTitle>
+            <DialogDescription>
+              Next time you start a session, that note will be waiting so you can pick up exactly
+              where you left off.
+            </DialogDescription>
+            <div className="space-y-3 rounded-xl border-2 border-dashed border-pencil/40 bg-muted/60 p-5 text-sm">
+              <p className="flex gap-3">
+                <NotebookPen className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden />
+                <span>
+                  <strong>Your note is for future-you.</strong> Open Session later and the last
+                  thing you wrote is right there at the top.
+                </span>
+              </p>
+              <p className="flex gap-3">
+                <CalendarDays className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden />
+                <span>
+                  <strong>Weekly summary</strong> is a light look at your deep-work hours — handy
+                  when you want a sense of progress, optional when you don’t.
+                </span>
+              </p>
+            </div>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <button
+                type="button"
+                className="min-h-11 rounded-lg px-2 text-sm font-semibold text-muted-foreground underline decoration-dotted underline-offset-4 hover:text-foreground"
+                onClick={() => setFirstSaveOpen(false)}
+              >
+                Stay here
+              </button>
+              <button
+                type="button"
+                className="sketch-btn-primary min-h-11"
+                onClick={() => {
+                  setFirstSaveOpen(false);
+                  navigate({ to: "/momentum/stats" });
+                }}
+              >
+                <CalendarDays className="h-5 w-5" aria-hidden />
+                See weekly summary
+              </button>
+            </div>
           </DialogContent>
         </Dialog>
       </SessionRevisionContext.Provider>
