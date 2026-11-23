@@ -55,6 +55,10 @@ const PLACED_KEY = "pikup.placedSticker";
 const TIMER_KEY = "pikup.timer";
 const PENDING_KEY = "pikup.pendingSession";
 const PENDING_DRAFT_KEY = "pikup.pendingNoteDraft";
+const FOCUS_LENGTH_KEY = "pikup.focusLength";
+
+/** Focus lengths (minutes) a session can aim for. No limit is the default, so nobody feels rushed. */
+export const FOCUS_LENGTHS = [25, 45, 60];
 
 export interface PendingSession {
   /** The already-recorded session this unfinished note belongs to. */
@@ -347,6 +351,10 @@ interface PersistedTimer {
   pausedAccumMs: number;
   /** Wall-clock ms when the current pause began, or null if running */
   pauseStartedAt: number | null;
+  /** Focus length in seconds, or null for no limit; absent on timers saved before it existed */
+  goalSec?: number | null;
+  /** true once the "time's up" prompt has been answered for this focus length */
+  goalPrompted?: boolean;
 }
 
 function emptyTimer(): PersistedTimer {
@@ -356,7 +364,14 @@ function emptyTimer(): PersistedTimer {
     startTs: 0,
     pausedAccumMs: 0,
     pauseStartedAt: null,
+    goalSec: null,
+    goalPrompted: false,
   };
+}
+
+/** The focus length picked last, used for the next session too. */
+function loadFocusLength(): number | null {
+  return read<number | null>(FOCUS_LENGTH_KEY, null);
 }
 
 function loadTimer(): PersistedTimer {
@@ -381,8 +396,14 @@ export interface TimerState {
   running: boolean;
   paused: boolean;
   elapsed: number;
+  /** This session's focus length in seconds (or the one the next session will use); null is no limit */
+  goalSec: number | null;
+  /** true once the "time's up" prompt has been answered */
+  goalPrompted: boolean;
   start: () => void;
   togglePause: () => void;
+  setGoal: (sec: number | null) => void;
+  markGoalPrompted: () => void;
   /** ends the session, returns its id + duration */
   stop: () => { start: number; elapsed: number } | null;
   reset: () => void;
@@ -391,6 +412,7 @@ export interface TimerState {
 export function useTimer(): TimerState {
   const [timer, setTimer] = useState<PersistedTimer>(emptyTimer);
   const [elapsed, setElapsed] = useState(0);
+  const [nextGoal, setNextGoal] = useState<number | null>(null);
 
   // Hydrate from localStorage after mount (avoids SSR mismatch; restores mid-session),
   // then follow changes made by other useTimer() instances or other tabs.
@@ -399,9 +421,10 @@ export function useTimer(): TimerState {
       const loaded = loadTimer();
       setTimer(loaded);
       setElapsed(wallElapsedSec(loaded));
+      setNextGoal(loadFocusLength());
     };
     const onStorage = (e: StorageEvent) => {
-      if (e.key === TIMER_KEY) sync();
+      if (e.key === TIMER_KEY || e.key === FOCUS_LENGTH_KEY) sync();
     };
     sync();
     window.addEventListener(TIMER_EVENT, sync);
@@ -444,6 +467,8 @@ export function useTimer(): TimerState {
     running: timer.running,
     paused: timer.paused,
     elapsed,
+    goalSec: timer.running ? (timer.goalSec ?? null) : nextGoal,
+    goalPrompted: timer.goalPrompted ?? false,
     start: () => {
       if (loadTimer().running) return;
       commit({
@@ -452,7 +477,24 @@ export function useTimer(): TimerState {
         startTs: Date.now(),
         pausedAccumMs: 0,
         pauseStartedAt: null,
+        goalSec: loadFocusLength(),
+        goalPrompted: false,
       });
+    },
+    setGoal: (sec) => {
+      localStorage.setItem(FOCUS_LENGTH_KEY, JSON.stringify(sec));
+      setNextGoal(sec);
+      const cur = loadTimer();
+      if (!cur.running) {
+        window.dispatchEvent(new Event(TIMER_EVENT));
+        return;
+      }
+      // A length that's already behind you counts as reached, so it doesn't pop up the moment it's picked
+      commit({ ...cur, goalSec: sec, goalPrompted: sec != null && wallElapsedSec(cur) >= sec });
+    },
+    markGoalPrompted: () => {
+      const cur = loadTimer();
+      if (cur.running) commit({ ...cur, goalPrompted: true });
     },
     togglePause: () => {
       const cur = loadTimer();
