@@ -149,7 +149,7 @@ function BacklogPage() {
           id="item-title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Add an item, e.g. “Add a search box to the trail list”"
+          placeholder="Add an item, e.g. “Add recipe photos”"
           maxLength={100}
           className="sketch-input min-w-[14rem] flex-1"
         />
@@ -184,7 +184,7 @@ function BacklogPage() {
               onKeyDown={(e) => {
                 if (e.key === "Escape") setNewTopic(null);
               }}
-              placeholder="New topic, e.g. Audio"
+              placeholder="New topic, e.g. Testing"
               maxLength={24}
               autoFocus
               className="sketch-input w-44 pr-9"

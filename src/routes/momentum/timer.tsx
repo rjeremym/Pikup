@@ -2,7 +2,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Pause, Play, Square, Eye, EyeOff, NotebookPen, Pencil } from "lucide-react";
 import {
-  FOCUS_LENGTHS,
   fmtDuration,
   lastNote,
   getPlacedSticker,
@@ -12,6 +11,7 @@ import {
 import { useSessionControls, useSessionRevision } from "@/lib/session-context";
 import { STICKER_IMAGES } from "@/lib/stickers";
 import { NoteEditForm } from "@/components/note-edit-form";
+import { FocusLengthPicker } from "@/components/focus-length-picker";
 import { Meter } from "@/components/section-layout";
 
 export const Route = createFileRoute("/momentum/timer")({
@@ -173,7 +173,7 @@ function TimerPage() {
             )}
           </div>
 
-          <FocusLengthPicker goalSec={timer.goalSec} onPick={timer.setGoal} />
+          <FocusLengthPicker goalSec={timer.goalSec} onPick={timer.setGoal} className="mt-6" />
 
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             {!timer.running ? (
@@ -219,40 +219,6 @@ function FocusProgress({ elapsed, goalSec }: { elapsed: number; goalSec: number 
           ? `${goalMin}-minute focus reached`
           : `${Math.floor(elapsed / 60)} of ${goalMin} min`}
       </p>
-    </div>
-  );
-}
-
-/**
- * An optional length to aim for. In testing, the focus timer was the feature that most predicted
- * wanting to use Pikup, but a plain stopwatch gave people nothing to work toward.
- */
-function FocusLengthPicker({
-  goalSec,
-  onPick,
-}: {
-  goalSec: number | null;
-  onPick: (sec: number | null) => void;
-}) {
-  const choices = [null, ...FOCUS_LENGTHS.map((min) => min * 60)];
-  return (
-    <div role="group" aria-labelledby="focus-length-label" className="mt-6">
-      <p id="focus-length-label" className="text-sm font-semibold text-muted-foreground">
-        Focus for
-      </p>
-      <div className="mt-2 flex flex-wrap justify-center gap-2">
-        {choices.map((sec) => (
-          <button
-            key={sec ?? "none"}
-            type="button"
-            aria-pressed={goalSec === sec}
-            onClick={() => onPick(sec)}
-            className="sketch-chip min-h-9"
-          >
-            {sec ? `${sec / 60} min` : "No limit"}
-          </button>
-        ))}
-      </div>
     </div>
   );
 }

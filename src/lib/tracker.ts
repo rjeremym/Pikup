@@ -57,8 +57,11 @@ const PENDING_KEY = "pikup.pendingSession";
 const PENDING_DRAFT_KEY = "pikup.pendingNoteDraft";
 const FOCUS_LENGTH_KEY = "pikup.focusLength";
 
-/** Focus lengths (minutes) a session can aim for. No limit is the default, so nobody feels rushed. */
-export const FOCUS_LENGTHS = [25, 45, 60];
+/**
+ * Focus lengths (minutes) a session can aim for. No limit is the default, so nobody feels rushed.
+ * 2 minutes is for the class demo, so the time's-up prompt shows up within a few minutes.
+ */
+export const FOCUS_LENGTHS = [2, 25, 45, 60];
 
 export interface PendingSession {
   /** The already-recorded session this unfinished note belongs to. */
@@ -328,9 +331,10 @@ export function fmtDuration(totalSec: number): string {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
+/** Rounds down, so progress never shows a goal or sticker milestone as reached before it is. */
 export function fmtHours(sec: number): string {
-  const h = sec / 3600;
-  return `${Math.round(h * 10) / 10}h`;
+  // tenths of an hour are 360s; dividing seconds directly avoids float error at exact tenths
+  return `${Math.floor(sec / 360) / 10}h`;
 }
 
 /** 48m, 1h 12m */

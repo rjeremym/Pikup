@@ -114,7 +114,7 @@ export function SessionOutcomeEditor({
               }}
               required={outcome !== "unrecorded"}
               maxLength={140}
-              placeholder="e.g. Add photo uploads"
+              placeholder="e.g. Add recipe photos"
               className="sketch-input mt-2"
               aria-invalid={Boolean(error)}
               aria-describedby={error ? errorId : undefined}

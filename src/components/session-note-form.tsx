@@ -155,8 +155,8 @@ export function SessionNoteForm({
                   onChange={(e) => onChange({ ...draft, workedOn: e.target.value })}
                   placeholder={
                     outcome === "in-progress"
-                      ? "e.g. collision works, still jittery on slopes"
-                      : "e.g. fixed the save-file crash"
+                      ? "e.g. the form sends, but errors don’t show yet"
+                      : "e.g. fixed the sign-up page layout"
                   }
                   className="mt-1 w-full rounded-xl border-2 border-input bg-background px-4 py-3 outline-none focus:border-ring"
                   maxLength={140}
@@ -170,7 +170,7 @@ export function SessionNoteForm({
             <input
               value={workedOn}
               onChange={(e) => onChange({ ...draft, workedOn: e.target.value })}
-              placeholder="e.g. tile collision for the jump mechanic"
+              placeholder="e.g. the recipe page layout"
               className="mt-1 w-full rounded-xl border-2 border-input bg-background px-4 py-3 outline-none focus:border-ring"
               maxLength={140}
             />
@@ -295,7 +295,7 @@ export function SessionNoteForm({
               automaticNextStep.current = false;
               onChange({ ...draft, nextThing: e.target.value });
             }}
-            placeholder="e.g. wire up the coyote-time buffer"
+            placeholder="e.g. style the login page"
             className={`w-full rounded-xl border-2 border-input bg-background px-4 py-3 outline-none focus:border-ring ${
               visibleUpNext.length > 0 ? "mt-3" : "mt-1"
             }`}

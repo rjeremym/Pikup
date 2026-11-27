@@ -24,6 +24,7 @@ import { celebrateSave } from "@/lib/confetti";
 import { SessionContext, SessionRevisionContext } from "@/lib/session-context";
 import { SessionNoteForm } from "@/components/session-note-form";
 import { NoteEditForm } from "@/components/note-edit-form";
+import { FocusLengthPicker } from "@/components/focus-length-picker";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -374,6 +375,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
                   Your saved sessions and task outcomes appear in Weekly summary.
                 </p>
               </div>
+            )}
+            {/* Picked at the start, so the length counts from (nearly) zero: one picked after it
+                has already passed never prompts */}
+            {!editingReminder && (
+              <FocusLengthPicker goalSec={timer.goalSec} onPick={timer.setGoal} align="start" />
             )}
             {!editingReminder && (
               <button
