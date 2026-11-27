@@ -2,7 +2,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Pause, Play, Square, Eye, EyeOff, NotebookPen, Pencil } from "lucide-react";
 import {
+  fmtCountdown,
   fmtDuration,
+  fmtFocusLength,
   lastNote,
   getPlacedSticker,
   workedOnLabel,
@@ -164,8 +166,8 @@ function TimerPage() {
                       : "deep work in progress…"
                     : "ready when you are"}
                 </p>
-                {timer.running && timer.goalSec && (
-                  <FocusProgress elapsed={timer.elapsed} goalSec={timer.goalSec} />
+                {timer.running && timer.goalSec != null && (
+                  <FocusProgress done={timer.elapsed - timer.goalFromSec} goalSec={timer.goalSec} />
                 )}
               </>
             ) : (
@@ -208,16 +210,15 @@ function TimerPage() {
   );
 }
 
-/** How far into the chosen focus length this session is. */
-function FocusProgress({ elapsed, goalSec }: { elapsed: number; goalSec: number }) {
-  const goalMin = Math.round(goalSec / 60);
+/** How far into the chosen focus length this session is (counted from when it was set). */
+function FocusProgress({ done, goalSec }: { done: number; goalSec: number }) {
   return (
     <div className="mx-auto mt-4 max-w-xs">
-      <Meter value={elapsed} max={goalSec} label="Progress toward your focus length" />
+      <Meter value={done} max={goalSec} label="Progress toward your focus length" />
       <p className="mt-1.5 text-sm text-muted-foreground">
-        {elapsed >= goalSec
-          ? `${goalMin}-minute focus reached`
-          : `${Math.floor(elapsed / 60)} of ${goalMin} min`}
+        {done >= goalSec
+          ? `Focus goal reached: ${fmtFocusLength(goalSec)}`
+          : `${fmtCountdown(goalSec - done)} left of ${fmtFocusLength(goalSec)}`}
       </p>
     </div>
   );

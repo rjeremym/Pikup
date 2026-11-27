@@ -12,6 +12,7 @@ import {
   saveEndedSession,
   updateSessionNote,
   fmtDuration,
+  fmtFocusLength,
   useTimer,
   workedOnLabel,
   type PendingSession,
@@ -229,7 +230,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     timer.running &&
     timer.goalSec != null &&
     !timer.goalPrompted &&
-    timer.elapsed >= timer.goalSec &&
+    timer.elapsed >= timer.goalFromSec + timer.goalSec &&
     !pending &&
     !welcomeOpen &&
     !reminder;
@@ -376,8 +377,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
                 </p>
               </div>
             )}
-            {/* Picked at the start, so the length counts from (nearly) zero: one picked after it
-                has already passed never prompts */}
+            {/* Offered right as the session starts, the natural moment to decide how long to focus */}
             {!editingReminder && (
               <FocusLengthPicker goalSec={timer.goalSec} onPick={timer.setGoal} align="start" />
             )}
@@ -405,8 +405,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
               Time’s up — nice focus!
             </DialogTitle>
             <DialogDescription>
-              You’ve focused for {Math.round((timer.goalSec ?? 0) / 60)} minutes. Wrap up with a
-              note for next time, or keep going if you’re on a roll.
+              You’ve focused for {fmtFocusLength(timer.goalSec ?? 0)}. Wrap up with a note for next
+              time, or keep going if you’re on a roll.
             </DialogDescription>
             <div className="flex flex-wrap-reverse items-center justify-end gap-3">
               <button

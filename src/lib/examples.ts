@@ -59,8 +59,8 @@ export function exampleBacklog(): BacklogItem[] {
 /**
  * Saved on a first visit so the class demo starts mid-project: a session in each of the two weeks
  * before, then two this week, the last one partway through the login feature. That last note is
- * the one Pikup brings back. This week adds up to 1h 58m, just under the first sticker's 2h, so
- * a 2-minute focus session unlocks it.
+ * the one Pikup brings back. This week adds up to 1h 59m 50s, just under the first sticker's 2h,
+ * so even a 10-second focus session unlocks it.
  */
 export function exampleSessions(now = new Date()): Session[] {
   const daysIntoWeek = (now.getDay() + 6) % 7; // Monday = 0
@@ -83,15 +83,15 @@ export function exampleSessions(now = new Date()): Session[] {
   const session = (
     id: string,
     start: number,
-    minutes: number,
+    durationSec: number,
     topic: string,
     workedOn: string,
     nextThing: string,
   ): Session => ({
     id: `seed-${id}`,
     start,
-    end: start + minutes * 60 * 1000,
-    durationSec: minutes * 60,
+    end: start + durationSec * 1000,
+    durationSec,
     topic,
     workedOn,
     nextThing,
@@ -101,7 +101,7 @@ export function exampleSessions(now = new Date()): Session[] {
     session(
       "setup",
       startOn(daysIntoWeek + 9, 20),
-      45,
+      45 * 60,
       "Frontend",
       "Set up the project and the page layout",
       "Build the sign-up page",
@@ -109,7 +109,7 @@ export function exampleSessions(now = new Date()): Session[] {
     session(
       "sign-up",
       startOn(daysIntoWeek + 3, 14),
-      70,
+      70 * 60,
       "Frontend",
       "Built the sign-up page",
       "Save new users to the database",
@@ -117,7 +117,7 @@ export function exampleSessions(now = new Date()): Session[] {
     session(
       "save-users",
       earlier,
-      38,
+      39 * 60 + 50,
       "Backend",
       "Saved new users to the database",
       "Build the login form",
@@ -125,7 +125,7 @@ export function exampleSessions(now = new Date()): Session[] {
     session(
       "login",
       latest,
-      80,
+      80 * 60,
       "Frontend",
       "Built the login form, but it isn't connected to anything yet.",
       "Connect the login form to the API",

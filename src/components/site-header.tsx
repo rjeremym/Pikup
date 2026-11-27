@@ -3,7 +3,7 @@ import { Menu, Pause, Play, Square, UserRound, LogOut, NotebookPen } from "lucid
 import { useState } from "react";
 import { PRIMARY_NAV, findPage, primaryPathFor, type NavPage } from "@/lib/nav";
 import { signOut, useAccount } from "@/lib/account";
-import { fmtDuration } from "@/lib/tracker";
+import { fmtCountdown, fmtDuration } from "@/lib/tracker";
 import { useSessionControls } from "@/lib/session-context";
 import {
   Sheet,
@@ -87,6 +87,7 @@ function SessionControls() {
       ? "End session and leave a note"
       : "Start session";
   const Icon = pending ? NotebookPen : timer.running ? Square : Play;
+  const focusLeft = timer.goalSec == null ? 0 : timer.goalFromSec + timer.goalSec - timer.elapsed;
   return (
     <div
       className="flex shrink-0 items-center gap-1.5 min-[820px]:gap-2"
@@ -107,8 +108,10 @@ function SessionControls() {
             />
             {timer.paused && <span>Paused</span>}
             {fmtDuration(timer.elapsed)}
-            {timer.goalSec && (
-              <span className="font-normal text-muted-foreground">/ {timer.goalSec / 60}m</span>
+            {focusLeft > 0 && (
+              <span className="font-normal text-muted-foreground">
+                · {fmtCountdown(focusLeft)} left
+              </span>
             )}
           </span>
           <button
