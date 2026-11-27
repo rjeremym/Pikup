@@ -41,16 +41,30 @@ export function FocusLengthPicker({
     onPick(sec);
   };
 
+  /**
+   * Sets the typed length; returns false if it isn't a usable length. Only an explicit Set says
+   * why: a message appearing on blur would shift the layout under the click that caused it.
+   */
+  const applyCustom = (u: Unit, explain: boolean) => {
+    const sec = Math.round(Number(amount) * (u === "min" ? 60 : 1));
+    if (!amount.trim() || !Number.isFinite(sec) || sec < 1 || sec > MAX_SEC) {
+      if (explain) setError("Enter a length between 1 second and 12 hours.");
+      return false;
+    }
+    setError("");
+    // re-picking the same length would restart its countdown
+    if (sec !== goalSec) onPick(sec);
+    return true;
+  };
+
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    const sec = Math.round(Number(amount) * (unit === "min" ? 60 : 1));
-    if (!Number.isFinite(sec) || sec < 1 || sec > MAX_SEC) {
-      setError("Enter a length between 1 second and 12 hours.");
-      return;
-    }
-    onPick(sec);
-    setEditing(false);
-    setError("");
+    if (applyCustom(unit, true)) setEditing(false);
+  };
+
+  const changeUnit = (u: Unit) => {
+    setUnit(u);
+    applyCustom(u, false);
   };
 
   return (
@@ -77,7 +91,8 @@ export function FocusLengthPicker({
           onClick={() => setEditing((open) => !open)}
           className="sketch-chip min-h-9"
         >
-          {isCustom ? `Custom: ${fmtFocusLength(goalSec)}` : "Custom…"}
+          {/* Same label while the box is open, so the chip can't grow and wrap the row mid-click */}
+          {isCustom && !editing ? `Custom: ${fmtFocusLength(goalSec)}` : "Custom…"}
         </button>
       </div>
       {editing && (
@@ -96,6 +111,9 @@ export function FocusLengthPicker({
               setAmount(event.target.value);
               setError("");
             }}
+            // Applies as soon as focus leaves the box, so typing a length and going straight for
+            // "Got it" (or anywhere else) still sets it; Set and Enter aren't required
+            onBlur={() => applyCustom(unit, false)}
             placeholder="10"
             className="sketch-input w-24 py-1.5"
             aria-invalid={Boolean(error)}
@@ -107,7 +125,7 @@ export function FocusLengthPicker({
               key={u}
               type="button"
               aria-pressed={unit === u}
-              onClick={() => setUnit(u)}
+              onClick={() => changeUnit(u)}
               className="sketch-chip min-h-9"
             >
               {UNIT_LABELS[u]}
