@@ -57,8 +57,13 @@ const PENDING_KEY = "pikup.pendingSession";
 const PENDING_DRAFT_KEY = "pikup.pendingNoteDraft";
 const FOCUS_LENGTH_KEY = "pikup.focusLength";
 
-/** Focus lengths (minutes) a session can aim for. No limit is the default, so nobody feels rushed. */
+/**
+ * Preset focus lengths (minutes) a session can aim for; any other length can be typed in. No limit
+ * is the default, so nobody feels rushed.
+ */
 export const FOCUS_LENGTHS = [25, 45, 60];
+
+const isPresetLength = (sec: number | null) => sec == null || FOCUS_LENGTHS.includes(sec / 60);
 
 export interface PendingSession {
   /** The already-recorded session this unfinished note belongs to. */
@@ -328,9 +333,10 @@ export function fmtDuration(totalSec: number): string {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
+/** Rounds down, so progress never shows a goal or sticker milestone as reached before it is. */
 export function fmtHours(sec: number): string {
-  const h = sec / 3600;
-  return `${Math.round(h * 10) / 10}h`;
+  // tenths of an hour are 360s; dividing seconds directly avoids float error at exact tenths
+  return `${Math.floor(sec / 360) / 10}h`;
 }
 
 /** 48m, 1h 12m */
@@ -339,6 +345,19 @@ export function fmtMinutes(sec: number): string {
   const h = Math.floor(totalMin / 60);
   const m = totalMin % 60;
   return h ? `${h}h ${m}m` : `${m}m`;
+}
+
+/** 10 seconds, 1 minute, 1 minute 30 seconds */
+export function fmtFocusLength(sec: number): string {
+  const unit = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return [m ? unit(m, "minute") : "", s ? unit(s, "second") : ""].filter(Boolean).join(" ");
+}
+
+/** 0:07, 24:13: time left on a focus length */
+export function fmtCountdown(sec: number): string {
+  return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
 }
 
 /** Wall-clock timer persistence — elapsed is derived from Date.now(), not ticks. */
@@ -353,6 +372,8 @@ interface PersistedTimer {
   pauseStartedAt: number | null;
   /** Focus length in seconds, or null for no limit; absent on timers saved before it existed */
   goalSec?: number | null;
+  /** Elapsed seconds when the focus length was set: it counts from then, like a kitchen timer */
+  goalFromSec?: number;
   /** true once the "time's up" prompt has been answered for this focus length */
   goalPrompted?: boolean;
 }
@@ -365,11 +386,12 @@ function emptyTimer(): PersistedTimer {
     pausedAccumMs: 0,
     pauseStartedAt: null,
     goalSec: null,
+    goalFromSec: 0,
     goalPrompted: false,
   };
 }
 
-/** The focus length picked last, used for the next session too. */
+/** The preset focus length picked last, used for the next session too. */
 function loadFocusLength(): number | null {
   return read<number | null>(FOCUS_LENGTH_KEY, null);
 }
@@ -398,6 +420,8 @@ export interface TimerState {
   elapsed: number;
   /** This session's focus length in seconds (or the one the next session will use); null is no limit */
   goalSec: number | null;
+  /** Elapsed seconds when the focus length was set, since it counts from then */
+  goalFromSec: number;
   /** true once the "time's up" prompt has been answered */
   goalPrompted: boolean;
   start: () => void;
@@ -468,6 +492,7 @@ export function useTimer(): TimerState {
     paused: timer.paused,
     elapsed,
     goalSec: timer.running ? (timer.goalSec ?? null) : nextGoal,
+    goalFromSec: timer.running ? (timer.goalFromSec ?? 0) : 0,
     goalPrompted: timer.goalPrompted ?? false,
     start: () => {
       if (loadTimer().running) return;
@@ -477,20 +502,19 @@ export function useTimer(): TimerState {
         startTs: Date.now(),
         pausedAccumMs: 0,
         pauseStartedAt: null,
-        goalSec: loadFocusLength(),
+        goalSec: nextGoal,
+        goalFromSec: 0,
         goalPrompted: false,
       });
     },
     setGoal: (sec) => {
-      localStorage.setItem(FOCUS_LENGTH_KEY, JSON.stringify(sec));
+      // Presets carry over to the next session; a typed-in length is just for this one
+      if (isPresetLength(sec)) localStorage.setItem(FOCUS_LENGTH_KEY, JSON.stringify(sec));
       setNextGoal(sec);
       const cur = loadTimer();
-      if (!cur.running) {
-        window.dispatchEvent(new Event(TIMER_EVENT));
-        return;
+      if (cur.running) {
+        commit({ ...cur, goalSec: sec, goalFromSec: wallElapsedSec(cur), goalPrompted: false });
       }
-      // A length that's already behind you counts as reached, so it doesn't pop up the moment it's picked
-      commit({ ...cur, goalSec: sec, goalPrompted: sec != null && wallElapsedSec(cur) >= sec });
     },
     markGoalPrompted: () => {
       const cur = loadTimer();

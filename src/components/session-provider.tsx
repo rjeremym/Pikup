@@ -12,6 +12,7 @@ import {
   saveEndedSession,
   updateSessionNote,
   fmtDuration,
+  fmtFocusLength,
   useTimer,
   workedOnLabel,
   type PendingSession,
@@ -24,6 +25,7 @@ import { celebrateSave } from "@/lib/confetti";
 import { SessionContext, SessionRevisionContext } from "@/lib/session-context";
 import { SessionNoteForm } from "@/components/session-note-form";
 import { NoteEditForm } from "@/components/note-edit-form";
+import { FocusLengthPicker } from "@/components/focus-length-picker";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -228,7 +230,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     timer.running &&
     timer.goalSec != null &&
     !timer.goalPrompted &&
-    timer.elapsed >= timer.goalSec &&
+    timer.elapsed >= timer.goalFromSec + timer.goalSec &&
     !pending &&
     !welcomeOpen &&
     !reminder;
@@ -375,6 +377,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
                 </p>
               </div>
             )}
+            {/* Offered right as the session starts, the natural moment to decide how long to focus */}
+            {!editingReminder && (
+              <FocusLengthPicker goalSec={timer.goalSec} onPick={timer.setGoal} align="start" />
+            )}
             {!editingReminder && (
               <button
                 type="button"
@@ -399,8 +405,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
               Time’s up — nice focus!
             </DialogTitle>
             <DialogDescription>
-              You’ve focused for {Math.round((timer.goalSec ?? 0) / 60)} minutes. Wrap up with a
-              note for next time, or keep going if you’re on a roll.
+              You’ve focused for {fmtFocusLength(timer.goalSec ?? 0)}. Wrap up with a note for next
+              time, or keep going if you’re on a roll.
             </DialogDescription>
             <div className="flex flex-wrap-reverse items-center justify-end gap-3">
               <button

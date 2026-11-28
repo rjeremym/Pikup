@@ -1,7 +1,7 @@
 import { useSessionRevision } from "@/lib/session-context";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowRight, Play } from "lucide-react";
+import { ArrowRight, Play, RotateCcw } from "lucide-react";
 import {
   fmtHours,
   fmtMinutes,
@@ -19,6 +19,14 @@ import { exampleNotes, exampleWeekSeconds } from "@/lib/examples";
 import { PageLinkContent } from "@/components/site-header";
 import { Meter } from "@/components/section-layout";
 import { cn } from "@/lib/utils";
+import { resetPrototypeData } from "@/lib/storage";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 // import { openPrototypeIntro } from "@/lib/prototype-intro";
 
 export const Route = createFileRoute("/")({
@@ -142,7 +150,7 @@ function Landing() {
 
       <footer className="border-t-2 border-dashed border-pencil/30 py-6 text-center text-sm text-muted-foreground">
         Pikup · low-fidelity prototype · your notes stay in this browser · clicks and scrolling are
-        recorded with Microsoft Clarity
+        recorded with Microsoft Clarity · <StartOver />
         {/* The prototype intro popup is turned off (see __root.tsx), so this link has nothing to open
         ·{" "}
         <button
@@ -154,6 +162,42 @@ function Landing() {
         </button> */}
       </footer>
     </main>
+  );
+}
+
+/** Puts this browser back to the example project, for trying Pikup again from the beginning. */
+function StartOver() {
+  const [open, setOpen] = useState(false);
+  return (
+    <AlertDialog open={open} onOpenChange={setOpen}>
+      <AlertDialogTrigger className="font-semibold underline decoration-dotted underline-offset-4 hover:text-foreground">
+        start over
+      </AlertDialogTrigger>
+      <AlertDialogContent className="paper-card w-[calc(100%-2rem)] max-w-md rounded-2xl">
+        <AlertDialogTitle className="hand text-3xl font-normal">Start over?</AlertDialogTitle>
+        <AlertDialogDescription>
+          This clears your notes, sessions, goals and backlog in this browser and brings back the
+          example project, so you can try Pikup from the beginning.
+        </AlertDialogDescription>
+        <div className="grid grid-cols-2 items-stretch gap-3">
+          <button
+            type="button"
+            className="sketch-btn min-h-11 px-3 text-xl"
+            onClick={() => setOpen(false)}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="sketch-btn-primary min-h-11 px-3 text-xl"
+            onClick={resetPrototypeData}
+          >
+            <RotateCcw className="h-5 w-5" aria-hidden />
+            Start over
+          </button>
+        </div>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 
